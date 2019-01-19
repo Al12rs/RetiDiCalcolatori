@@ -101,7 +101,9 @@ int main(int argc, char **argv)
     
     //Invio richiesta.
     len = sizeof(servaddr);
-    if(sendto(sd, &req, sezeof(req), 0, (struct sockaddr *) &servaddr, len) > 0){
+    printf("Send request.");
+    if (sendto(sd, &req, sizeof(req), 0, (struct sockaddr *)&servaddr, len) > 0)
+    {
       perror("Sendto");
       //Error is not fatal, continue loop.
       printf("%s", loopString);
