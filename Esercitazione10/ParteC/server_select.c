@@ -24,7 +24,7 @@
 #define LINE_LENGTH 128
 #define WORD_LENGTH 32
 #define MAX_SINGERS 16
-#define max(a,b) ((a) > (b) ? (a) : (b))
+#define max(a, b) ((a) > (b) ? (a) : (b))
 
 //Structs
 typedef struct
@@ -35,7 +35,7 @@ typedef struct
 typedef struct
 {
   char singerName[WORD_LENGTH];
-  int voto; 
+  int voto;
 } TCPAnswer;
 
 typedef struct
@@ -55,7 +55,7 @@ void gestore(int signo)
   int stato;
   printf("Esecuzione gestore di SIGCHLD\n");
   wait(&stato);
-} 
+}
 
 //procedures
 void inizializzazione()
@@ -74,27 +74,27 @@ void inizializzazione()
   //1a riga
   i = 0;
   strcpy(tabella[i].singerName, "Mandarino");
-  strcpy(tabella[i].category,   "Campioni");
+  strcpy(tabella[i].category, "Campioni");
   tabella[i].voto = 1500;
-  strcpy(tabella[i].fileAudio,  "vicino.avi");
+  strcpy(tabella[i].fileAudio, "vicino.avi");
   //2a riga
   i++;
   strcpy(tabella[i].singerName, "Amara Bianchi");
-  strcpy(tabella[i].category,   "Campioni");
+  strcpy(tabella[i].category, "Campioni");
   tabella[i].voto = 2000;
-  strcpy(tabella[i].fileAudio,  "immobilismo.avi");
+  strcpy(tabella[i].fileAudio, "immobilismo.avi");
   //3a riga
   i++;
   strcpy(tabella[i].singerName, "Zucchero");
-  strcpy(tabella[i].category,   "NuoveProposte");
+  strcpy(tabella[i].category, "NuoveProposte");
   tabella[i].voto = 550;
-  strcpy(tabella[i].fileAudio,  "ascolto.avi");
+  strcpy(tabella[i].fileAudio, "ascolto.avi");
   //4a riga
   i++;
   strcpy(tabella[i].singerName, "Amari");
-  strcpy(tabella[i].category,   "NuoveProposte");
+  strcpy(tabella[i].category, "NuoveProposte");
   tabella[i].voto = 800;
-  strcpy(tabella[i].fileAudio,  "cosaE.avi");
+  strcpy(tabella[i].fileAudio, "cosaE.avi");
 }
 
 //MAIN
@@ -246,21 +246,25 @@ int main(int argc, char **argv)
         printf("Operazione richiesta da: %s %i\n", hostUdp->h_name, (unsigned)ntohs(cliaddr.sin_port));
 
       //ELABORAZIONE RICHIESTA UDP
-      trovato=0;
-      for(i=0; i<MAX_SINGERS; i++){
-        if (strcmp(tabella[i].singerName, reqUDP.singerName) == 0) {
+      trovato = 0;
+      for (i = 0; i < MAX_SINGERS; i++)
+      {
+        if (strcmp(tabella[i].singerName, reqUDP.singerName) == 0)
+        {
           trovato = 1;
           break;
         }
       }
-      if(trovato){
+      if (trovato)
+      {
         tabella[i].voto++;
         risUDP = tabella[i].voto;
         printf("# Voti ottenuti da %s: %d\n", reqUDP.singerName, risUDP);
-                                                                                                            
-      }else{
+      }
+      else
+      {
         risUDP = -1;
-        printf("# Cantante non trovato.\n");       
+        printf("# Cantante non trovato.\n");
       }
 
       //INVIO RISPOSTA UDP
@@ -270,10 +274,10 @@ int main(int argc, char **argv)
         continue;
       }
 
-      //TERMINE GESTIONE RICHIESTA UDP            
+      //TERMINE GESTIONE RICHIESTA UDP
       printf("SERVER: libero e riavvio.\n");
-      
-    }//GESTIONE UDP
+
+    } //GESTIONE UDP
 
     //GESTIONE RICHIESTE TCP
     //parallelo
@@ -306,26 +310,37 @@ int main(int argc, char **argv)
         else
           printf("Server (figlio): host client e' %s \n", hostTcp->h_name);
 
-        // Leggo la richiesta del client
+        // Leggo le richieste del client
         while ((nread = read(conn_sd, &m, sizeof(m))) > 0)
         {
           printf("# Server (figlio): letti %d bytes \n", nread);
           printf("# Server (figlio): soglia voti M: %d\n", m);
 
-          for(i=0; i<MAX_SINGERS; i++){
-            if(tabella[i].voto >= m){
+          for (i = 0; i < MAX_SINGERS; i++)
+          {
+            if (tabella[i].voto >= m)
+            {
               strcpy(tcpreply.singerName, tabella[i].singerName);
               tcpreply.voto = tabella[i].voto;
               //write reply
               if (write(conn_sd, &tcpreply, sizeof(tcpreply)) < 0)
-                {
-                  perror("Errore nell'invio del risultato\n");
-                  continue;
-                }              
+              {
+                perror("Errore nell'invio del risultato\n");
+                continue;
+              }
             }
           }
 
-        } //while read reqTCP
+          strcpy(tcpreply.singerName, "L");
+          tcpreply.voto = -1;
+          if (write(conn_sd, &tcpreply, sizeof(tcpreply)) < 0)
+          {
+            perror("Errore nell'invio del risultato\n");
+            //fallita comunicazione con questo client, esco dal ciclo.
+            break;
+          }
+
+        } //while nread
 
         // Libero risorse
         printf("Figlio TCP terminato, libero risorse e chiudo. \n");
@@ -335,13 +350,13 @@ int main(int argc, char **argv)
         //Terminate child
         exit(0);
 
-      }//DEATH OF CHILD
+      } //DEATH OF CHILD
 
       //chiusura socket di comunicazione del padre.
-      close(conn_sd);//padre
+      close(conn_sd); //padre
 
-    }//GESTIONE TCP
+    } //GESTIONE TCP
 
-  }//SELECT LOOP
+  } //SELECT LOOP
 
 } //main

@@ -100,7 +100,11 @@ int main(int argc, char *argv[])
     printf("# Ricevo e stampo tutti i cantanti coi requisiti richiesti:\n");
     while ((nread = read(sd, &tcpreply, sizeof(tcpreply))) > 0)
     {
-      printf("Cantante: %s \t Voti: %d\n", tcpreply.singerName, tcpreply.voto);
+      if (tcpreply.voto != -1)
+        printf("Cantante: %s \t Voti: %d\n", tcpreply.singerName, tcpreply.voto);
+      else{
+        break;
+      }
     }
     printf("# Fine dei risultati\n");
 
