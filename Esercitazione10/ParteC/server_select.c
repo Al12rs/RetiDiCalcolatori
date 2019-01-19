@@ -20,46 +20,23 @@
 #include <netdb.h>
 #include <regex.h>
 
+//Defines
 #define LINE_LENGTH 128
 #define WORD_LENGTH 32
 #define MAX_SINGERS 16
+#define max(a,b) ((a) > (b) ? (a) : (b))
 
-void gestore(int signo)
-{
-  int stato;
-  printf("esecuzione gestore di SIGCHLD\n");
-  wait(&stato);
-}
-
-/*#define max(a, b) ((a) > (b) ? (a) : (b))
-
-typedef struct
-{
-    char fileName[LINE_LENGTH];
-    char parola[WORD_LENGTH];
-} ReqUDP;
-
-int deleteWord(FILE *fin, FILE *fout, char *parola)
-{
-    int result = 1;
-    char ch, string[128];
-    while (fscanf(fin, "%s", string) != EOF)
-    {
-        if (strcmp(string, parola))
-        { //parola diversa
-            ch = fgetc(fin);
-            fwrite(string, strlen(string), 1, fout);
-            fputc(ch, fout);
-            //fwrite(' ', sizeof(char), 1,fout);
-        }
-    }
-    return result;
-}
-*/
+//Structs
 typedef struct
 {
   char singerName[WORD_LENGTH];
 } UDPRequest;
+
+typedef struct
+{
+  char singerName[WORD_LENGTH];
+  int voto; 
+} TCPAnswer;
 
 typedef struct
 {
@@ -69,8 +46,18 @@ typedef struct
   char fileAudio[LINE_LENGTH];
 } RigaTabella;
 
+//Globals
 RigaTabella tabella[MAX_SINGERS];
 
+//Signal handlers
+void gestore(int signo)
+{
+  int stato;
+  printf("Esecuzione gestore di SIGCHLD\n");
+  wait(&stato);
+} 
+
+//procedures
 void inizializzazione()
 {
   int i;
@@ -106,18 +93,20 @@ void inizializzazione()
   strcpy(tabella[i].fileAudio,  "cosaE.avi");
 }
 
+//MAIN
 int main(int argc, char **argv)
 {
+  //template vars
   struct sockaddr_in cliaddr, servaddr;
   struct hostent *hostTcp, *hostUdp;
   int port, listen_sd, conn_sd, udp_sd, nread, maxfdp1, len;
   const int on = 1;
   fd_set rset;
-  UDPRequest req;
-  FILE *fd_sorg_udp, *fd_temp_udp;
-  char charBuff[2], newDir[LINE_LENGTH], fileNameTemp[LINE_LENGTH], fileName[LINE_LENGTH], dir[LINE_LENGTH];
-  DIR *dir1, *dir2, *dir3;
-  struct dirent *dd1, *dd2;
+  UDPRequest reqUDP;
+  //user vars
+  int i, trovato, risUDP;
+  int m;
+  TCPAnswer tcpreply;
 
   //CONTROLLO ARGOMENTI
   if (argc != 2)
@@ -162,21 +151,21 @@ int main(int argc, char **argv)
     exit(3);
   }
   printf("Server: creata la socket d'ascolto per le richieste di ordinamento, fd=%d\n", listen_sd);
-
+  //SetOptional
   if (setsockopt(listen_sd, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on)) < 0)
   {
     perror("set opzioni socket d'ascolto");
     exit(3);
   }
   printf("Server: set opzioni socket d'ascolto ok\n");
-
+  //bind
   if (bind(listen_sd, (struct sockaddr *)&servaddr, sizeof(servaddr)) < 0)
   {
     perror("bind socket d'ascolto");
     exit(3);
   }
   printf("Server: bind socket d'ascolto ok\n");
-
+  //listen
   if (listen(listen_sd, 5) < 0)
   {
     perror("listen");
@@ -230,19 +219,21 @@ int main(int argc, char **argv)
         exit(5);
       }
     }
+
     //GESTIONE RICHIESTE UDP
+    //sequenziale
     if (FD_ISSET(udp_sd, &rset))
     {
       printf("Ricevuta richiesta di UDP: eliminazione di una parola\n");
       len = sizeof(struct sockaddr_in);
 
-      if (recvfrom(udp_sd, &req, sizeof(req), 0, (struct sockaddr *)&cliaddr, &len) < 0)
+      if (recvfrom(udp_sd, &reqUDP, sizeof(reqUDP), 0, (struct sockaddr *)&cliaddr, &len) < 0)
       {
         perror("recvfrom ");
         continue;
       }
 
-      printf("Operazione richiesta: #NomeOperazione. Entità in esame: %s\n", req.singerName);
+      printf("Operazione richiesta: #NomeOperazione. Entità in esame: %s\n", reqUDP.singerName);
 
       hostUdp = gethostbyaddr((char *)&cliaddr.sin_addr, sizeof(cliaddr.sin_addr), AF_INET);
       if (hostUdp == NULL)
@@ -250,35 +241,41 @@ int main(int argc, char **argv)
       else
         printf("Operazione richiesta da: %s %i\n", hostUdp->h_name, (unsigned)ntohs(cliaddr.sin_port));
 
-      //OPERAZIONI SULLE STRUTTURE
-      int ris = 0;
-      fd_sorg_udp = fopen(req.fileName, "rt");
-      fileNameTemp[0] = '\0';
-      strcat(fileNameTemp, req.fileName);
-      strcat(fileNameTemp, "_temp");
-      fd_temp_udp = fopen(fileNameTemp, "wb");
-      if (!fd_temp_udp || !fd_sorg_udp)
-      {
-        perror("Errore apertura file");
-        ris = -1;
+      //ELABORAZIONE RICHIESTA UDP
+      trovato=0;
+      for(i=0; i<MAX_SINGERS; i++){
+        if (strcmp(tabella[i].singerName, reqUDP.singerName) == 0) {
+          trovato = 1;
+          break;
+        }
       }
-      else
-        ris = deleteWord(fd_sorg_udp, fd_temp_udp, req.parola);
+      if(trovato){
+        tabella[i].voto++;
+        risUDP = tabella[i].voto;
+        printf("# Voti ottenuti da %s: %d\n", reqUDP.singerName, risUDP);
+                                                                                                            
+      }else{
+        risUDP = -1;
+        printf("# Cantante non trovato.\n");       
+      }
 
-      printf("Nel file %s sono state eliminate le parole uguali a %s\n", req.fileName, req.parola);
-      if (sendto(udp_sd, &ris, sizeof(int), 0, (struct sockaddr *)&cliaddr, len) < 0)
+      //INVIO RISPOSTA UDP
+      if (sendto(udp_sd, &risUDP, sizeof(int), 0, (struct sockaddr *)&cliaddr, len) < 0)
       {
         perror("sendto ");
         continue;
       }
+
+      //TERMINE GESTIONE RICHIESTA UDP            
       printf("SERVER: libero e riavvio.\n");
-      fclose(fd_sorg_udp);
-      fclose(fd_temp_udp);
-    }
-    /* GESTIONE RICHIESTE TCP  ----------------------------- */
+      
+    }//GESTIONE UDP
+
+    //GESTIONE RICHIESTE TCP
+    //parallelo
     if (FD_ISSET(listen_sd, &rset))
     {
-      printf("Ricevuta richiesta TCP: file del direttorio secondo lvl\n");
+      printf("Ricevuta richiesta TCP\n");
       len = sizeof(cliaddr);
       if ((conn_sd = accept(listen_sd, (struct sockaddr *)&cliaddr, &len)) < 0)
       {
@@ -290,13 +287,15 @@ int main(int argc, char **argv)
         else
           exit(6);
       }
+
+      //ELABORAZIONE RICHIESTA IN NUOVO PROCESSO
       if (fork() == 0)
       {
         close(listen_sd);
         hostTcp = gethostbyaddr((char *)&cliaddr.sin_addr, sizeof(cliaddr.sin_addr), AF_INET);
         if (hostTcp == NULL)
         {
-          printf("client host information not found\n");
+          printf("Server: client host information not found.\n");
           close(conn_sd);
           exit(6);
         }
@@ -304,75 +303,41 @@ int main(int argc, char **argv)
           printf("Server (figlio): host client e' %s \n", hostTcp->h_name);
 
         // Leggo la richiesta del client
-        while ((nread = read(conn_sd, dir, sizeof(dir))) > 0)
+        while ((nread = read(conn_sd, &m, sizeof(m))) > 0)
         {
-          printf("Server (figlio):letti %d char \n", nread);
-          printf("Server (figlio): direttorio richiesto: %s\n", dir);
+          printf("# Server (figlio): letti %d bytes \n", nread);
+          printf("# Server (figlio): soglia voti M: %d\n", m);
 
-          char risp;
-          if ((dir1 = opendir(dir)) != NULL)
-          { // direttorio presente
-            risp = 'S';
-            printf("Invio risposta affermativa al client\n");
-            write(conn_sd, &risp, sizeof(char));
-            while ((dd1 = readdir(dir1)) != NULL)
-            {
-              if (strcmp(dd1->d_name, ".") != 0 && strcmp(dd1->d_name, "..") != 0)
-              {
-
-                //build new path
-                newDir[0] = '\0';
-                strcat(newDir, dir);
-                strcat(newDir, "/");
-                strcat(newDir, dd1->d_name);
-                //printf("Test apertura dir su %s\n",newDir);
-                if ((dir2 = opendir(newDir)) != NULL)
-                { //dir sec lvl
-                  printf("Ciclo dir sec lvl %s\n", newDir);
-                  while ((dd2 = readdir(dir2)) != NULL)
-                  {
-                    if (strcmp(dd2->d_name, ".") != 0 && strcmp(dd2->d_name, "..") != 0)
-                    {
-
-                      //build new path
-                      strcat(newDir, "/");
-                      strcat(newDir, dd2->d_name);
-                      printf("Test apertura dir su %s\n", newDir);
-                      if ((dir3 = opendir(newDir)) == NULL)
-                      { // file of sec lvlv
-                        printf("%s è un file di sec lvl \n", dd2->d_name);
-                        strcpy(fileName, dd2->d_name);
-                        strcat(fileName, "\0");
-                        printf("Invio nome fileName: %s\n", fileName);
-                        if (write(conn_sd, fileName, (strlen(fileName) + 1)) < 0)
-                        {
-                          perror("Errore nell'invio del nome file\n");
-                          continue;
-                        }
-                      } //if file 2 lvl
-                    }   //if not . and .. 2 lvl
-                  }     //while in 2 lvl
-                  printf("Fine invio\n");
-                  risp = '#';
-                  write(conn_sd, &risp, sizeof(char));
-                } //if dir 2 lvl
-              }   //if not . and .. 1 lvl
-            }     //while frst lvl
-          }       //if open dir 1 lvl
-          else
-          { //err apertura dir
-            risp = 'N';
-            printf("Invio risposta negativa al client per dir %s \n", dir);
-            write(conn_sd, &risp, sizeof(char));
+          for(i=0; i<MAX_SINGERS; i++){
+            if(tabella[i].voto >= m){
+              strcpy(tcpreply.singerName, tabella[i].singerName);
+              tcpreply.voto = tabella[i].voto;
+              //write reply
+              if (write(conn_sd, &tcpreply, sizeof(tcpreply)) < 0)
+                {
+                  perror("Errore nell'invio del risultato\n");
+                  continue;
+                }              
+            }
           }
-        } //while read req
+
+        } //while read reqTCP
 
         // Libero risorse
         printf("Figlio TCP terminato, libero risorse e chiudo. \n");
+        //close socket, send EOF
         close(conn_sd);
+
+        //Terminate child
         exit(0);
-      }               //if fork
-      close(conn_sd); //padre
-    }                 //if TCP
-  }                   //for
+
+      }//DEATH OF CHILD
+
+      //chiusura socket di comunicazione del padre.
+      close(conn_sd);//padre
+
+    }//GESTIONE TCP
+
+  }//SELECT LOOP
+
 } //main
