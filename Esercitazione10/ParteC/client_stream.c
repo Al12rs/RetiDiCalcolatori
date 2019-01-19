@@ -11,14 +11,25 @@
 #include <netdb.h>
 #include <string.h>
 
+//defines
 #define LINE_LENGTH 256
+#define WORD_LENGTH 32
+//structs
+typedef struct
+{
+  char singerName[WORD_LENGTH];
+  int voto; 
+} TCPAnswer;
 
 int main(int argc, char *argv[])
 {
+  //template var
   int port, nread, sd, nwrite;
-  char directoryName[LINE_LENGTH], buffChar;
   struct hostent *host;
   struct sockaddr_in servaddr;
+  //user var
+  int m;
+  TCPAnswer tcpreply;
 
   /* CONTROLLO ARGOMENTI ---------------------------------- */
   if (argc != 3)
@@ -55,7 +66,7 @@ int main(int argc, char *argv[])
     exit(2);
   }
 
-  servaddr.sin_addr.s_addr = ((struct in_addr *)(host->h_addr))->s_addr;
+  servaddr.sin_addr.s_addr = ((struct in_addr *)(host->h_addr_list[0]))->s_addr;
   servaddr.sin_port = htons(port);
 
   /* CREAZIONE SOCKET ------------------------------------ */
@@ -77,42 +88,26 @@ int main(int argc, char *argv[])
 
   /* CORPO DEL CLIENT:
 	 ciclo di accettazione di richieste da utente ------- */
-  printf("Inserire nome del direttorio, EOF per terminare: ");
-  while (scanf("%s", directoryName) == 1)
+  printf("# Inserire valore di soglia, EOF per terminare: ");
+  while (scanf("%d", &m) == 1)
   {
-    printf("Invio il nome del direttorio: %s\n", directoryName);
-    nwrite = write(sd, directoryName, strlen(directoryName));
-    printf("DBG scritti al server %d char\n", nwrite);
+    // Scrittura richiesta al server
+    printf("# Invio valore di soglia al server: %d\n", m);
+    nwrite = write(sd, &m, sizeof(m));
+    printf("# Bytes scritti al server %d char\n", nwrite);
 
     // Lettura risposta dal server
-    read(sd, &buffChar, sizeof(char));
-    if (buffChar == 'S')
+    printf("# Ricevo e stampo tutti i cantanti coi requisiti richiesti:\n");
+    while ((nread = read(sd, &tcpreply, sizeof(tcpreply))) > 0)
     {
-      printf("Ricevo e stampo i file nel direttorio remoto:\n");
-      while ((nread = read(sd, &buffChar, sizeof(char))) > 0)
-      {
-        if (buffChar == '#')
-        {
-          break;
-        }
-        else if (buffChar == '\0')
-        {
-          write(1, &buffChar, sizeof(char));
-          printf("\n");
-        }
-        else
-        {
-          write(1, &buffChar, sizeof(char));
-        }
-      }
+      printf("Cantante: %s \t Voti: %d\n", tcpreply.singerName, tcpreply.voto);
     }
-    else
-    {
-      printf("directory non presente sul server\n");
-    }
-    printf("Nome del direttorio, EOF per terminare: ");
+    printf("# Fine dei risultati\n");
+
+    //continuazione del ciclo
+    printf("# Inserire valore di soglia, EOF per terminare: ");
   }
-  /* Chiusura socket in ricezione */
+  //Chiusura socket in ricezione
   close(sd);
   printf("\nClient: termino...\n");
   exit(0);
