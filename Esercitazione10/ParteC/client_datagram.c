@@ -11,7 +11,7 @@
 #include <string.h>
 
 //Defines
-#define WORD_LENGTH 32
+#define WORD_LENGTH 128
 
 //structs
 typedef struct{
@@ -69,7 +69,8 @@ int main(int argc, char **argv)
     printf("%s not found in /etc/host\n", argv[1]);
     exit(2);
   } else {
-    servaddr.sin_addr.s_addr = ((struct in_addr *)(host->h_addr_list[0]))->s_addr;
+    servaddr.sin_addr.s_addr = ((struct in_addr *)(host->h_addr))->s_addr;
+    servaddr.sin_port = htons(port);
   }
 
   //CREAZIONE SOCKET
@@ -102,7 +103,7 @@ int main(int argc, char **argv)
     //Invio richiesta.
     len = sizeof(servaddr);
     printf("Send request.");
-    if (sendto(sd, &req, sizeof(req), 0, (struct sockaddr *)&servaddr, len) > 0)
+    if (sendto(sd, &req, sizeof(req), 0, (struct sockaddr *) &servaddr, len) < 0)
     {
       perror("Sendto");
       //Error is not fatal, continue loop.
