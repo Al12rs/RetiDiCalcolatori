@@ -72,21 +72,25 @@ void inizializzazione()
 
   //riempimento con valori utili
   //1a riga
+  i = 0;
   strcpy(tabella[i].singerName, "Mandarino");
   strcpy(tabella[i].category,   "Campioni");
   tabella[i].voto = 1500;
   strcpy(tabella[i].fileAudio,  "vicino.avi");
   //2a riga
+  i++;
   strcpy(tabella[i].singerName, "Amara Bianchi");
   strcpy(tabella[i].category,   "Campioni");
   tabella[i].voto = 2000;
   strcpy(tabella[i].fileAudio,  "immobilismo.avi");
   //3a riga
+  i++;
   strcpy(tabella[i].singerName, "Zucchero");
   strcpy(tabella[i].category,   "NuoveProposte");
   tabella[i].voto = 550;
   strcpy(tabella[i].fileAudio,  "ascolto.avi");
   //4a riga
+  i++;
   strcpy(tabella[i].singerName, "Amari");
   strcpy(tabella[i].category,   "NuoveProposte");
   tabella[i].voto = 800;
