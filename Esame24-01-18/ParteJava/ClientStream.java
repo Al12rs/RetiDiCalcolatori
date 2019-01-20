@@ -5,7 +5,7 @@ public class ClientStream {
 
   public static void main(String[] args) throws IOException {
 
-    //CONTROLLO E ASSEGNAMENTO DEGLI ARGOMENTI
+    // CONTROLLO E ASSEGNAMENTO DEGLI ARGOMENTI
     InetAddress addr = null;
     int port = -1;
 
@@ -28,7 +28,7 @@ public class ClientStream {
       System.exit(2);
     }
 
-    //CREAZIONE DELLA SOCKET E DEGLI STREAM I/O
+    // CREAZIONE DELLA SOCKET E DEGLI STREAM I/O
     Socket socket = null;
     DataInputStream inSock = null;
     DataOutputStream outSock = null;
@@ -46,52 +46,101 @@ public class ClientStream {
       System.exit(1);
     }
 
-    //LETTURA DEI COMANDI DA STDIN
+    // LETTURA DEI COMANDI DA STDIN
     BufferedReader stdIn = new BufferedReader(new InputStreamReader(System.in));
     String comando = null;
     String nomeFolder = null;
-    int dim_min = 0;
+    long dim_min = 0;
+    String nomeFile = null;
+    String parolaDaEliminare = null;
 
     System.out.println("\n^D(Unix)/^Z(Win)+invio per uscire, altrimenti immetti il comando di una operazione.");
     System.out.print("# Comando (E=Eliminazione, T=Trasferimento): ");
     while ((comando = stdIn.readLine()) != null) {
-      if(comando.equals("T")){
-      dim_min = Integer.parseInt(stdIn.readLine());
+      if (comando.equals("T")) {
 
-      File dirCorr = new File(nomeFolder);
-      if (dirCorr.exists() && dirCorr.isDirectory()) {
-        File[] files = dirCorr.listFiles();
-        for (int i = 0; i < files.length; i++) {
-          File fileCorr = files[i];
-          System.out.println("File con nome: " + fileCorr.getName());
-          if (fileCorr.isFile() && dim_min <= fileCorr.length()) {
-            // I must send this file
-            outSock.writeUTF(fileCorr.getName());
-            String result = inSock.readUTF();
-            if (result.equals("attiva")) {
-              System.out
-                  .println("Il file " + fileCorr.getName() + " NON e' presente sul server: inizio il trasferimento");
-              outSock.writeLong(fileCorr.length());
-              FileUtility.trasferisci_N_byte_file_binario(
-                  new DataInputStream(new FileInputStream(fileCorr.getAbsolutePath())), outSock, fileCorr.length());
-            } else if (result.equals("salta file"))
-              System.out.println(
-                  "Il file " + fileCorr.getName() + " era gia' presente sul server e non e' stato sovrascritto");
-            else {
-              System.out.println("MPutFileClient: violazione protocollo...");
-              System.exit(4);
+        System.out.print("Inserire il nome del direttorio: ");
+        nomeFolder = stdIn.readLine();
+        System.out.print("Inserire la dimensione di soglia: ");
+        dim_min = Long.parseLong(stdIn.readLine());
+
+        // INVIO TIPO RICHIESTA AL SERVER
+        outSock.writeUTF(comando);
+
+        // INVIO DATI RICHIESTA
+        outSock.writeUTF(nomeFolder);
+        outSock.writeLong(dim_min);
+
+        try {
+          String nomeFileRicevuto;
+          long numeroByte;
+          FileOutputStream outFileCorr;
+
+          while ((nomeFileRicevuto = inSock.readUTF()) != null) {
+            if (nomeFileRicevuto.equals("#")) {
+              break;
             }
-          } else
-            System.out.println("File saltato");
 
+            numeroByte = inSock.readLong();
+            System.out.println("Scrivo il file " + nomeFileRicevuto + " di " + numeroByte + " byte");
+            outFileCorr = new FileOutputStream(nomeFileRicevuto);
+            FileUtility.trasferisci_N_byte_file_binario(inSock, new DataOutputStream(outFileCorr), numeroByte);
+            outFileCorr.close();
+
+          } // while
+        } catch (SocketTimeoutException ste) {
+          System.out.println("Timeout scattato: ");
+          ste.printStackTrace();
+          socket.close();
+          System.exit(1);
+        } catch (Exception e) {
+          System.out.println("Problemi, i seguenti : ");
+          e.printStackTrace();
+          System.out.println("Chiudo ed esco...");
+          socket.close();
+          System.exit(2);
         }
-      }
-      }
+        System.out.println("Trasferimento concluso");        
+        //FINE CICLO DI TRASFERIMENTO
+      } else if(comando.equals("E")){
+
+        System.out.print("Inserire il nome del file: ");
+        nomeFile = stdIn.readLine();
+        System.out.print("Inserire la parola da eliminare: ");
+        parolaDaEliminare = stdIn.readLine();
+
+        // INVIO TIPO RICHIESTA AL SERVER
+        outSock.writeUTF(comando);
+
+        // INVIO DATI RICHIESTA
+        outSock.writeUTF(nomeFile);
+        outSock.writeUTF(parolaDaEliminare);
+        
+        //RICEZIONE ESITO DELLA RICHIESTA
+        try {
+          int numOccorrenzeEliminate = inSock.readInt();
+          System.out.println("Numero di occorrenze di "+parolaDaEliminare+" eliminate dal file "+nomeFile+": "+numOccorrenzeEliminate);
+        } catch (SocketTimeoutException ste) {
+          System.out.println("Timeout scattato: ");
+          ste.printStackTrace();
+          socket.close();
+          System.exit(1);
+        } catch (Exception e) {
+          System.out.println("Problemi, i seguenti : ");
+          e.printStackTrace();
+          System.out.println("Chiudo ed esco...");
+          socket.close();
+          System.exit(2);
+        }
+        System.out.println("Richiesta di eliminazione terminata");
+      }//fine eliminazione
 
       System.out.print("\n^D(Unix)/^Z(Win)+invio per uscire, altrimenti immetti il nome della cartella: ");
       continue;
+    }//fine while richiesta di comandi
 
-    }
+    System.out.println("Chiudo e termino...");
+    socket.close();
 
   }
 }

@@ -1,19 +1,25 @@
 import java.io.*;
 import java.net.*;
 
-class PutFileServerThread extends Thread {
+//THREAD CLASS
+class ServerThread extends Thread {
+
+  // varialibili
   private Socket clientSocket = null;
 
-  public PutFileServerThread(Socket clientSocket) {
+  // costruttore
+  public ServerThread(Socket clientSocket) {
     this.clientSocket = clientSocket;
   }
 
+  // THREAD IMPLEMENTATION
   public void run() {
     System.out.println("Attivazione figlio: " + Thread.currentThread().getName());
+    String requestType = null;
 
+    // Creazione input/output Streams della socket.
     DataInputStream inSock;
     DataOutputStream outSock;
-
     try {
       inSock = new DataInputStream(clientSocket.getInputStream());
       outSock = new DataOutputStream(clientSocket.getOutputStream());
@@ -22,43 +28,88 @@ class PutFileServerThread extends Thread {
       ioe.printStackTrace();
       return;
     }
+
     try {
       try {
-        String nomeFileRicevuto;
-        long numeroByte;
-        File fileCorr;
-        FileOutputStream outFileCorr;
+        // GESTIONE RICHIESTE
+        while (true) {
 
-        while ((nomeFileRicevuto = inSock.readUTF()) != null) {
-          nomeFileRicevuto = nomeFileRicevuto + "server";
-          fileCorr = new File(nomeFileRicevuto);
-          if (fileCorr.exists()) {
-            outSock.writeUTF("salta file");
-          } else {
-            outSock.writeUTF("attiva");
-            numeroByte = inSock.readLong();
-            System.out.println("Scrivo il file " + nomeFileRicevuto + " di " + numeroByte + " byte");
-            outFileCorr = new FileOutputStream(nomeFileRicevuto);
-            FileUtility.trasferisci_N_byte_file_binario(inSock, new DataOutputStream(outFileCorr), numeroByte);
-            outFileCorr.close();
+          // lettura tipo richiesta
+          try{
+            requestType = inSock.readUTF();
+          }catch(SocketTimeoutException ste) {
+            System.out.println("Timeout scattato: ");
+            ste.printStackTrace();
+            clientSocket.close();
+            System.exit(1);
           }
-        } // while
+
+          // Transfer Files Request
+          if (requestType.equals("T")) {
+
+            // lettura path della cartella source
+            String folderName = null;
+            folderName = inSock.readUTF();
+
+            long minDim = inSock.readInt();
+
+            File currentDir = new File(folderName);
+            if (currentDir.exists() && currentDir.isDirectory()) {
+              File[] files = currentDir.listFiles();
+
+              // iterate on files in currentDir
+              for (int i = 0; i < files.length; i++) {
+                File currentFile = files[i];
+                System.out.println("File con nome: " + currentFile.getName());
+                if (currentFile.isFile() && minDim <= currentFile.length()) {
+
+                  // Send fileName
+                  outSock.writeUTF(currentFile.getName());
+
+                  // Send fileSize
+                  outSock.writeLong(currentFile.length());
+
+                  // Send file
+                  FileUtility.trasferisci_N_byte_file_binario(
+                      new DataInputStream(new FileInputStream(currentFile.getAbsolutePath())), outSock,
+                      currentFile.length());
+
+                } else
+                  System.out.println("File saltato");
+              } // fine for
+
+            } // if currentDir.exists
+
+            // finiti i file da trasferire
+            outSock.writeUTF("#");
+
+          } // transfer files request
+          // Eliminate Word Request
+          else if (requestType.equals("E")) {
+            String wordToDelete;
+            String targetFileName;
+            int removedCount = 0;
+            char[] separators = { ' ', '\n' };
+
+            targetFileName = inSock.readUTF();
+
+            wordToDelete = inSock.readUTF();
+
+            try {
+              removedCount = FileUtility.removeWordFromFile(targetFileName, wordToDelete, separators);
+            } catch (IOException e) {
+              System.out.println("Errori durante la lettura/scrittura files.");
+              removedCount = -1;
+            }
+            outSock.writeInt(removedCount);
+
+          } // eliminate word request
+        }//while (ciclo richieste)
       } catch (EOFException eof) {
         System.out.println("Raggiunta la fine delle ricezioni, chiudo...");
         clientSocket.close();
-        System.out.println("PutFileServer: termino...");
+        System.out.println("Server: termino...");
         System.exit(0);
-      } catch (SocketTimeoutException ste) {
-        System.out.println("Timeout scattato: ");
-        ste.printStackTrace();
-        clientSocket.close();
-        System.exit(1);
-      } catch (Exception e) {
-        System.out.println("Problemi, i seguenti : ");
-        e.printStackTrace();
-        System.out.println("Chiudo ed esco...");
-        clientSocket.close();
-        System.exit(2);
       }
     } catch (IOException ioe) {
       System.out.println("Problemi nella chiusura della socket: ");
@@ -66,7 +117,8 @@ class PutFileServerThread extends Thread {
       System.out.println("Chiudo ed esco...");
       System.exit(3);
     }
-  }
+    
+  }//run()
 
 }// thread
 
@@ -80,17 +132,17 @@ public class ServerStream {
         port = Integer.parseInt(args[0]);
         // controllo che la porta sia nel range consentito 1024-65535
         if (port < 1024 || port > 65535) {
-          System.out.println("Usage: java PutFileServerCon [serverPort>1024]");
+          System.out.println("# Usage: java ServerName [serverPort>1024]");
           System.exit(1);
         }
       } else {
-        System.out.println("Usage: java PutFileServerCon port");
+        System.out.println("# Usage: java ServerName port");
         System.exit(1);
       }
     } catch (Exception e) {
       System.out.println("Problemi, i seguenti: ");
       e.printStackTrace();
-      System.out.println("Usage: java PutFileServerCon port");
+      System.out.println("# Usage: java ServerName port");
       System.exit(1);
     }
 
@@ -100,7 +152,7 @@ public class ServerStream {
     try {
       serverSocket = new ServerSocket(port);
       serverSocket.setReuseAddress(true);
-      System.out.println("PutFileServerCon: avviato ");
+      System.out.println("Server: avviato ");
       System.out.println("Server: creata la server socket: " + serverSocket);
     } catch (Exception e) {
       System.err.println("Server: problemi nella creazione della server socket: " + e.getMessage());
@@ -123,7 +175,7 @@ public class ServerStream {
         }
 
         try {
-          new PutFileServerThread(clientSocket).start();
+          new ServerThread(clientSocket).start();
         } catch (Exception e) {
           System.err.println("Server: problemi nel server thread: " + e.getMessage());
           e.printStackTrace();
