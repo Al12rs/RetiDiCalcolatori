@@ -1,4 +1,19 @@
 # Java
+RMI:
+With a local registry
+  Compile *.java files using the "javac" command
+  Compile the stubs using "rmic -vcompat RMIServer"
+  Start up the registry using "rmiregistry"
+  Start up the RMIServer and then the RMIClient using the "java" command
+With a remote registry
+  Compile *.java files using the "javac" command
+  Compile the stubs using "rmic -vcompat RMIRegistry"
+  Compile the stubs using "rmic -vcompat RMIServer"
+  Start up the registry using "rmiregistry"
+  Start the executables in the following order:
+    java –Djava.security.policy=rmi.policy RegistryRemotoImpl [rmiregistryPort]
+    java –Djava.security.policy=rmi.policy ServerImpl NomeHostRegistryRemoto [rmiregistryPort]
+    java –Djava.security.policy=rmi.policy ClientImpl NomeHostRegistryRemoto [rmiregistryPort]
 
 
 
