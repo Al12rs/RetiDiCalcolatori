@@ -14,10 +14,7 @@ public class RMI_Server extends UnicastRemoteObject implements RMI_interfaceFile
 		super();
 		listaCantanti = new Singer[MAX_SINGERS];
 		for (int i = 0; i < MAX_SINGERS; i++) {
-			listaCantanti[i].name = "L";
-			listaCantanti[i].category = "L";
-			listaCantanti[i].voto = -1;
-			listaCantanti[i].fileName = "L";
+			listaCantanti[i] = new Singer("L", "L", -1, "L");
 		}
 		int i = 0;
 		// 1a riga
@@ -84,15 +81,15 @@ public class RMI_Server extends UnicastRemoteObject implements RMI_interfaceFile
 				break;
 			}
 		}
-		if (firstIndex > 0)
-			result[1] = listaCantanti[firstIndex];
+		if (firstIndex >= 0)
+			result[0] = listaCantanti[firstIndex];
+		else
+			result[0] = new Singer();
+		if (secondIndex >= 0)
+			result[1] = listaCantanti[secondIndex];
 		else
 			result[1] = new Singer();
-		if (secondIndex > 0)
-			result[2] = listaCantanti[secondIndex];
-		else
-			result[2] = new Singer();
-		if (thirdIndex > 0)
+		if (thirdIndex >= 0)
 			result[2] = listaCantanti[thirdIndex];
 		else
 			result[2] = new Singer();

@@ -63,9 +63,9 @@ public class RMI_Client {
 					Singer[] res = new Singer[3];
 					try {
 						res = serverRMI.visualizza_podio();
-						System.out.println("# Prima   posizione: " + res[1].name + " " + res[1].voto);
-						System.out.println("# Seconda posizione: " + res[2].name + " " + res[2].voto);
-						System.out.println("# Terza   posizione: " + res[3].name + " " + res[3].voto);
+						System.out.println("# Prima   posizione: " + res[0].name + " " + res[0].voto);
+						System.out.println("# Seconda posizione: " + res[1].name + " " + res[1].voto);
+						System.out.println("# Terza   posizione: " + res[2].name + " " + res[2].voto);
 						
 					} catch (RemoteException re) {
 						System.out.println("Errore remoto: " + re.toString());
