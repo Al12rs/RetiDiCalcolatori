@@ -48,13 +48,14 @@ public class ClientStream {
 
     //LETTURA DEI COMANDI DA STDIN
     BufferedReader stdIn = new BufferedReader(new InputStreamReader(System.in));
+    String comando = null;
     String nomeFolder = null;
     int dim_min = 0;
 
     System.out.println("\n^D(Unix)/^Z(Win)+invio per uscire, altrimenti immetti il comando di una operazione.");
-    System.out.println("# Comando (E=Eliminazione, ");
-    while ((nomeFolder = stdIn.readLine()) != null) {
-      System.out.print("\n^D(Unix)/^Z(Win)+invio per uscire, altrimenti immetti dimensione minima del file: ");
+    System.out.print("# Comando (E=Eliminazione, T=Trasferimento): ");
+    while ((comando = stdIn.readLine()) != null) {
+      if(comando.equals("T")){
       dim_min = Integer.parseInt(stdIn.readLine());
 
       File dirCorr = new File(nomeFolder);
@@ -84,6 +85,7 @@ public class ClientStream {
             System.out.println("File saltato");
 
         }
+      }
       }
 
       System.out.print("\n^D(Unix)/^Z(Win)+invio per uscire, altrimenti immetti il nome della cartella: ");
