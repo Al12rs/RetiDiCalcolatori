@@ -67,7 +67,7 @@ public class FileUtility {
     StringBuilder charBuffer = new StringBuilder();
 
     while ((currentCharacter = targetFileReader.read()) != -1) {
-
+      //System.out.println("Dentro al ciclo, currentChar is " + (char)currentCharacter );
       boolean isSeparator = false;
       for (int i = 0; i < wordSeparators.length; i++) {
         if ((char) currentCharacter == wordSeparators[i]) {
@@ -76,15 +76,17 @@ public class FileUtility {
         }
       }
       if (isSeparator) {
+        //System.out.println("Compare " + charBuffer.toString() + " " + wordToBeRemoved);
+        
         if (!charBuffer.toString().equals(wordToBeRemoved)) {
-          charBuffer.append(currentCharacter);
+          charBuffer.append((char)currentCharacter);
           editedFileWriter.write(charBuffer.toString());
         } else {
           removedCount++;
         }
         charBuffer = new StringBuilder();
       } else {
-        charBuffer.append(currentCharacter);
+        charBuffer.append((char)currentCharacter);
       }
     } //finita lettura target
     targetFileReader.close();

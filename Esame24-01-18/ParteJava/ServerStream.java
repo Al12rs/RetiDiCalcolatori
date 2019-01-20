@@ -51,7 +51,7 @@ class ServerThread extends Thread {
             String folderName = null;
             folderName = inSock.readUTF();
 
-            long minDim = inSock.readInt();
+            long minDim = inSock.readLong();
 
             File currentDir = new File(folderName);
             if (currentDir.exists() && currentDir.isDirectory()) {
@@ -86,6 +86,7 @@ class ServerThread extends Thread {
           } // transfer files request
           // Eliminate Word Request
           else if (requestType.equals("E")) {
+            System.out.println("Richiesta Elimina");
             String wordToDelete;
             String targetFileName;
             int removedCount = 0;
@@ -94,6 +95,8 @@ class ServerThread extends Thread {
             targetFileName = inSock.readUTF();
 
             wordToDelete = inSock.readUTF();
+
+            System.out.println("Elimina " + wordToDelete +" da "+ targetFileName);
 
             try {
               removedCount = FileUtility.removeWordFromFile(targetFileName, wordToDelete, separators);
@@ -108,8 +111,8 @@ class ServerThread extends Thread {
       } catch (EOFException eof) {
         System.out.println("Raggiunta la fine delle ricezioni, chiudo...");
         clientSocket.close();
-        System.out.println("Server: termino...");
-        System.exit(0);
+        System.out.println("Server: termino thread...");
+        //System.exit(0);
       }
     } catch (IOException ioe) {
       System.out.println("Problemi nella chiusura della socket: ");

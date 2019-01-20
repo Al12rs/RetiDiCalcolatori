@@ -135,7 +135,7 @@ public class ClientStream {
         System.out.println("Richiesta di eliminazione terminata");
       }//fine eliminazione
 
-      System.out.print("\n^D(Unix)/^Z(Win)+invio per uscire, altrimenti immetti il nome della cartella: ");
+      System.out.print("\n^D(Unix)/^Z(Win)+invio per uscire, altrimenti immetti tipo operazione: ");
       continue;
     }//fine while richiesta di comandi
 
