@@ -1,6 +1,8 @@
 /* contaClient.c */
 
 #include <stdio.h>
+#include <string.h>
+#include <unistd.h>
 #include <rpc/rpc.h>
 #include "RPC_xFile.h"
 
@@ -9,97 +11,109 @@ int main(int argc, char *argv[])
 
   CLIENT *clnt;
   int *ris;
-  Output *out;
+  Output2 *output2;
   char *server, *nomeFile;
-  Input input;
-  char car, ok[128];
+  Input1 input1;
+  Input2 input2;
+  char car, requestType[3];
+  char linea[LINELENGTH];
+  char direttorio[PATHLENGTH];
+  char prefisso[LINELENGTH];
+  int i = 0;
 
-  input.direttorio = (char *)malloc(50);
-  input.soglia = 0;
-  nomeFile = (char *)malloc(50);
+  /*
+  input1.linea = (char *)malloc(LINELENGTH);
+  input2.direttorio = (char *)malloc(PATHLENGTH);
+  input2.prefisso = (char *)malloc(11);
+  */
 
+  // CONTROLLO ARGOMENTI
   if (argc != 2)
   {
-    fprintf(stderr, "uso: %s nomehost\n", argv[0]);
+    fprintf(stderr, "Usage: %s nomehost\n", argv[0]);
     exit(1);
   }
 
-  clnt = clnt_create(argv[1], CONTAPROG, CONTAVERS, "udp");
-
+  // CREAZIONE DEL PORTMAPPER
+  clnt = clnt_create(argv[1], RPCPROG, RPCVERS, "udp");
   if (clnt == NULL)
   {
     clnt_pcreateerror(argv[1]);
     exit(1);
   }
 
-  printf("richieste servizio fino a fine file\n");
-  printf("operazioni:  CS=Conta File maggiori di, C=Conta\n");
 
-  while (gets(ok))
+  printf("Richieste servizio fino a fine file.\n");
+  printf("# operazioni:  CO = Conta occorrenze di una linea, LF = Lista dei primi 6 file di un direttorio\n");
+
+  while (gets(requestType))
   {
-    if ((strcmp(ok, "CS") != 0) && (strcmp(ok, "C") != 0))
+    if ((strcmp(requestType, "CO") != 0) && (strcmp(requestType, "LF") != 0))
     {
       printf("scelta non disponibile\n");
       printf("richieste servizio fino a fine file\n");
-      printf("operazioni:  CS=Conta File maggiori di, C=Conta\n");
+      printf("# operazioni:  CO = Conta occorrenze di una linea, LF = Lista dei primi 6 file di un direttorio\n");
       continue;
     }
 
-    printf("Richiesto servizio: %s\n", ok);
+    printf("Richiesto servizio: %s\n", requestType);
 
     // richiesta conteggio file nel direttorio remoto
-    if (strcmp(ok, "CS") == 0)
+    if (strcmp(requestType, "LF") == 0)
     {
-      printf("inserisci il nome direttorio: \n");
-      gets(input.direttorio);
-      printf("inserisci la soglia: \n");
-      //controllo intero
-      while (scanf("%d", &input.soglia) != 1)
-      {
-        do
-        {
-          car = getchar();
-          printf("%c ", car);
-        } while (car != '\n');
-        printf("Inserire int");
-        continue;
-      }
-      gets(ok);
-      printf("Stringa letta: %s\n", ok);
+      printf("# Inserisci il nome direttorio: \n");
+      gets(direttorio);
+      free(input2.direttorio);
+      input2.direttorio = malloc(strlen(direttorio) + 1);
 
-      ris = conta_file_1(&input, clnt);
+      printf("# Inserisci il prefisso (max 10 caratteri): \n");
+      gets(prefisso);
+      while (strlen(prefisso) > 10){
+        printf("# Inserisci il prefisso (max 10 caratteri): \n");
+        gets(prefisso);
+      }
+      free(input2.prefisso);
+      input2.prefisso = malloc(strlen(prefisso) + 1);
+
+      output2 = lista_file_prefisso_1(&input2, clnt);
+
+      if (output2 == (Output2 *)NULL)
+        clnt_perror(clnt, "call failed");
+      else if (output2->numFiles == -1)
+        printf("E' avvenuto un errore lato server\n");
+      else{
+        printf("# Ho contato %d file con prefisso %s.\n", output2->numFiles, input2.prefisso);
+        for (i = 0; i < output2->numFiles; i++){
+          printf("File %d: %s\n", i+1, output2->fileList[i]);
+        }
+      }
+    } // List Files
+
+    // richiesta conteggio occorrenza linea nel direttorio remoto
+    else if (strcmp(requestType, "CO") == 0)
+    {
+      printf("inserisci la linea da cercare: \n");
+      gets(linea);
+      free(input1.linea);
+      input1.linea = malloc(strlen(linea) + 1);
+      strcpy(input1.linea, linea);
+      ris = conta_occorenze_linea_1(&input1, clnt);
 
       if (ris == (int *)NULL)
         clnt_perror(clnt, "call failed");
-      else if (*ris == -1)
+      else if ((*ris) == -1)
         printf("E' avvenuto un errore lato server\n");
       else
-        printf("Ho contato %d file con dim >= %d!\n", *ris, input.soglia);
-    } // CS
+        printf("# Ho contato %d occorrenza della linea -%s-\n",
+               (*ris), input1.linea);
+    } // Conta Occorrenze
 
-    // richiesta conteggio caratteri nel file remoto
-    else if (strcmp(ok, "C") == 0)
-    {
-      printf("inserisci il nome del file: \n");
-      gets(nomeFile);
-      out = conta_1(&nomeFile, clnt);
-
-      if (out == (int *)NULL)
-        clnt_perror(clnt, "call failed");
-      else if (out->codiceErrore == -1)
-        printf("E' avvenuto un errore lato server\n");
-      else
-        printf("Ho contato %d caratteri, %d parole e %d linee !\n",
-               out->caratteri, out->parole, out->linee);
-      //clean input buffer
-      memset(nomeFile, 0, sizeof(nomeFile));
-    } // CF
     printf("richieste servizio fino a fine file\n");
-    printf("operazioni:  CS=Conta File maggiori di, C=Conta\n");
+    printf("# operazioni:  CO = Conta occorrenze di una linea, LF = Lista dei primi 6 file di un direttorio\n");
+
   } //while
 
   clnt_destroy(clnt);
-  free(input.direttorio);
-  free(nomeFile);
+  free(input1.linea);
   printf("Esco dal client\n");
 }

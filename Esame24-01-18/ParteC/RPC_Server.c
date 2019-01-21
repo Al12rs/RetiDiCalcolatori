@@ -13,183 +13,103 @@
 #include "RPC_xFile.h"
 
 //AUXILIAR FUNCTION
-int contaLineInFile(char *linea, int fd)
+int contaLineInFile(char *linea, FILE *file)
 {
-  char buffer[LINELENGTH + 1];
-  char lineaDaConfrontare[LINELENGTH + 1];
+  char buffer[256 + 1];
+  char lineaDaConfrontare[256 + 1];
   int result = 0;
   strcpy(lineaDaConfrontare, linea);
   strcat(lineaDaConfrontare, "\n");
-  //fgets requires size of buffer to read-1 (alex deficiente...)
-  while (fgets(buffer, LINELENGTH, fd) != NULL)
+  printf("Prima del ciclo fgets\n");
+  while (fgets(buffer, 256, file) != NULL)
   {
+    printf("Dentro al ciclo fgets\n");
     if (strcmp(lineaDaConfrontare, buffer) == 0)
       result++;
   }
   return result;
-}
+} //contaLineInFile
 
 //REMOTE PROCEDURE CALL 1
 int *conta_occorenze_linea_1_svc(Input1 *input1, struct svc_req *rp)
 {
   static int result;
-
-  int nread, index;
-  char car;
-  char buffer;
-  char stringBuffer[DIM];
   DIR *dir;
   struct dirent *dd;
-  int i, fd_file;
-  off_t fileSize;
+  int i;
+  FILE *file;
+  char filePath[256];
+  strcpy(filePath, "/home/al12rs/Test/");
 
   result = -1;
 
-  printf("# Apertura direttorio corrente\n");
-  if ((dir = opendir(".")) == NULL)
+  printf("# Apertura direttorio \n");
+  if ((dir = opendir("/home/al12rs/Test")) == NULL)
   {
-    perror("# Errore apertura cwd:\n");
+    perror("# Errore apertura directory:\n");
     return (&result);
   }
-
   result = 0;
   //ciclo sui file in dir
   while ((dd = readdir(dir)) != NULL)
   {
-    fd_file = open(dd->d_name, O_RDONLY);
-    if (fd_file < 0)
+    strcpy(filePath, "/home/al12rs/Test/");
+    printf("# Dirpath: %s\n", filePath);
+
+    strcat(filePath, dd->d_name);
+    if ((file = fopen(filePath, "r")) != NULL)
     {
-      perror("# Errore apertura file:\n");
+      printf("# File non aperto d_name: %s\n", dd->d_name);
+      printf("# File non aperto filepath: %s\n", filePath);
+      perror("# Errore apertura file :\n");
       continue;
     }
     else
     {
-      result += contaLineInFile(input1->linea, fd_file);
+      printf("# File aperto d_name: %s\n", dd->d_name);
+      printf("# File aperto filepath: %s\n", filePath);
+      result += contaLineInFile(input1->linea, file);
     }
-    close(fd_file);
+    printf("# Primadi fcloes\n");
+    fclose(file);
   } //while readDir
 
-  while (1)
-  {
-    index = 0;
-    do
-    { //leggo a caratteri (spazi e \n iniziali)
-      nread = read(fd, &car, 1);
-      *caratteri = *caratteri + 1;
-      if (car == '\n') //new line
-        *linee = *linee + 1;
-      stringBuffer[index] = car;
-      index = index + 1;
-    } while (((car == ' ') || (car == '\n')) && (nread > 0));
-
-    if (nread <= 0)
-    {
-      *caratteri = *caratteri - 1;
-      return;
-    }
-    else
-      buffer = car;
-
-    while (1)
-    { //leggo a caratteri tutto il resto
-      nread = read(fd, &car, 1);
-      if (nread > 0)
-      {
-        *caratteri = *caratteri + 1;
-        buffer = car;
-
-        stringBuffer[index] = car;
-        index = index + 1;
-      }
-      else
-        return;
-      // CONTA OCCORRENZE PAROLA
-      if ((buffer == ' ') || (buffer == '\n'))
-      {
-        if (buffer == '\n')
-          *linee = *linee + 1;
-        *parole = *parole + 1;
-        /*if (strstr(stringBuffer,parola)!=NULL){
-					printf("DEBUG: print occurrence %s \n", stringBuffer);
-					*occorrenze = *occorrenze +1;
-				}*/
-        memset(stringBuffer, 0, sizeof(stringBuffer));
-        index = 0;
-        break;
-      }
-    }
-  }
   return &result;
-}
+} //rpc 1
 
 //REMOTE PROCEDURE CALL 2
 Output2 *lista_file_prefisso_1_svc(Input2 *input2, struct svc_req *rp)
 {
   static Output2 result;
-  int fd_file, nread;
-  char cCorr;
-
-  result.caratteri = 0;
-  result.parole = 0;
-  result.linee = 0;
-  result.codiceErrore = -1;
-
-  printf("Richiesto file %s \n", *input);
-
-  fd_file = open(*input, O_RDONLY);
-  if (fd_file < 0)
-  {
-    printf("File inesistente\n");
-    return (&result);
-  }
-  else
-  {
-    result.codiceErrore = 0;
-    /* Conteggio caratteri */
-    conta(fd_file, &(result.caratteri), &(result.parole), &(result.linee));
-
-    printf("Ho letto %d caratteri, %d parole e %d linee\n", result.caratteri,
-           result.parole, result.linee);
-    close(fd_file); //TODO
-    return (&result);
-  }
-}
-
-int *conta_file_1_svc(Input *input, struct svc_req *rp)
-{
-  static int result = 0;
   DIR *dir;
-  struct dirent *dd;
-  int i, fd_file;
-  off_t fileSize;
+  struct dirent *fileDirent;
+  int prefixLength = strlen(input2->prefisso);
 
-  result = -1;
+  printf("# Richiesti file con prefisso %s in direttorio %s\n", input2->prefisso, input2->direttorio);
 
-  printf("Richiesto direttorio %s\n", input->direttorio);
-  if ((dir = opendir(input->direttorio)) == NULL)
-    return (&result);
-
-  result = 0;
-  while ((dd = readdir(dir)) != NULL)
+  result.numFiles = -1;
+  printf("# Apertura direttorio\n");
+  if ((dir = opendir(".")) == NULL)
   {
-
-    fd_file = open(dd->d_name, O_RDONLY);
-    if (fd_file < 0)
-    {
-      printf("File inesistente\n");
-      return (&result);
-    }
-    fileSize = lseek(fd_file, 0L, SEEK_END);
-    /*memcpy(stringBuffer, &dd->d_name[0], strlen(input->suffisso));
-			stringBuffer[strlen(input->suffisso)+1] = '\0';
-			if(strstr(stringBuffer,input->suffisso) != NULL)*/
-    if (fileSize >= input->soglia)
-    {
-      printf("DEBUG: candidate file size %ld\n", fileSize);
-      result++;
-    }
+    perror("# Errore apertura direttorio:\n");
+    return (&result);
   }
-  printf("Numero totale di file nel direttorio richiesto %d\n", result);
 
-  return (&result);
-}
+  result.numFiles = 0;
+  
+  //ciclo sui file in dir
+  while ((fileDirent = readdir(dir)) != NULL && (result.numFiles <= N))
+  {
+    if (strlen(fileDirent->d_name) >= prefixLength)
+    {
+      if (strncmp(fileDirent->d_name, input2->prefisso, prefixLength) == 0)
+      {
+        //add filename to list (strdup fa malloc)
+        result.fileList[result.numFiles] = strdup(fileDirent->d_name);
+        result.numFiles++;
+      }
+    }
+  } //while readdir
+
+  return &result;
+} //rpc 2
