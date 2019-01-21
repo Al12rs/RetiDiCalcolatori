@@ -2,3 +2,7 @@
 *.json
 *.class
 .vscode
+/Esame24-01-18/ParteC/RPC_xFile.h
+/Esame24-01-18/ParteC/RPC_xFile_clnt.c
+/Esame24-01-18/ParteC/RPC_xFile_svc.c
+/Esame24-01-18/ParteC/RPC_xFile_xdr.c
