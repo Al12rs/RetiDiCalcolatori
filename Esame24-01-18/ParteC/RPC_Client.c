@@ -42,6 +42,10 @@ int main(int argc, char *argv[])
     exit(1);
   }
 
+  input2.direttorio=NULL;
+  input2.prefisso=NULL;
+  input1.linea=NULL;
+
 
   printf("Richieste servizio fino a fine file.\n");
   printf("# operazioni:  CO = Conta occorrenze di una linea, LF = Lista dei primi 6 file di un direttorio\n");
@@ -63,8 +67,11 @@ int main(int argc, char *argv[])
     {
       printf("# Inserisci il nome direttorio: \n");
       gets(direttorio);
+	  printf("Post gets\n");
       free(input2.direttorio);
+	  printf("Post free\n");
       input2.direttorio = malloc(strlen(direttorio) + 1);
+	  strcpy(input2.direttorio, direttorio);
 
       printf("# Inserisci il prefisso (max 10 caratteri): \n");
       gets(prefisso);
@@ -74,6 +81,7 @@ int main(int argc, char *argv[])
       }
       free(input2.prefisso);
       input2.prefisso = malloc(strlen(prefisso) + 1);
+	  strcpy(input2.prefisso, prefisso);
 
       output2 = lista_file_prefisso_1(&input2, clnt);
 
@@ -115,5 +123,7 @@ int main(int argc, char *argv[])
 
   clnt_destroy(clnt);
   free(input1.linea);
+  free(input2.direttorio);
+  free(input2.prefisso);
   printf("Esco dal client\n");
 }
