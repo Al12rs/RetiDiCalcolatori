@@ -41,14 +41,14 @@ public class RMI_Server extends UnicastRemoteObject implements RMI_interfaceFile
     ArrayList<String> result = new ArrayList<String>();
     File originalDirectory = new File(directoryPath);
     //'.' is: "any character", 'X*' is: "X, 0 or more times"
-    String pattern = ".*[AEIOUaeiou][AEIOUaeiou]";
+    String pattern = ".*[AEIOUaeiou][AEIOUaeiou].*";
 
     if (originalDirectory.isDirectory()) {
       result = listMatchingFilesInDirRecursive(originalDirectory, pattern);
     } else {
       throw new RemoteException("# Parameter directoryPath " + directoryPath + " is not a directory.");
     }
-    return (String[]) result.toArray();
+    return result.toArray(new String[0]);
   }
 
   //SECOND RMI METHOD
@@ -63,7 +63,7 @@ public class RMI_Server extends UnicastRemoteObject implements RMI_interfaceFile
     }
     File editedFile = new File(fileName + ".edited");
     try {
-      BufferedReader originalReader = new BufferedReader(new FileReader(editedFile));
+      BufferedReader originalReader = new BufferedReader(new FileReader(originalFile));
       BufferedWriter editedWriter = new BufferedWriter(new FileWriter(editedFile));
 
       while ((currentLine = originalReader.readLine()) != null) {
@@ -79,6 +79,7 @@ public class RMI_Server extends UnicastRemoteObject implements RMI_interfaceFile
 
     } catch (IOException e) {
       System.out.println("# Server: Error during read/write operation.");
+      e.printStackTrace();
       return -1;
     }
     return lineCount;
@@ -89,7 +90,7 @@ public class RMI_Server extends UnicastRemoteObject implements RMI_interfaceFile
 
 		int registryPort = 1099;
 		String registryHost = "localhost";
-		String serviceName = "# Server";
+		String serviceName = "Server";
 
 		// Controllo parametri
 		if (args.length != 0 && args.length != 1) {

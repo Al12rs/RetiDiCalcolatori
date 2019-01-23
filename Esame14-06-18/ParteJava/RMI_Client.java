@@ -61,7 +61,7 @@ public class RMI_Client {
               i++;
               System.out.println("File "+i+": "+s);												
             }
-            System.out.println("Trovati:" + i + "file");            
+            System.out.println("Trovati:" + i + " file");            
 					} catch (RemoteException re) {
 						System.out.println("Errore remoto: " + re.toString());
 					}
