@@ -31,7 +31,8 @@ int main(int argc, char *argv[])
   struct sockaddr_in servaddr;
   //user var
   char direttorio[PATH_LENGTH], buf;
-  int i, fd_w;
+  int fd_w;
+  long i;
   TCPAnswer tcpreply;
 
   // CONTROLLO ARGOMENTI
@@ -119,7 +120,7 @@ int main(int argc, char *argv[])
 
       printf("# Ricevo il file %s di dimensione %ld byte\n", tcpreply.fileName, tcpreply.fileSize);
       i = 0;
-      if (fd_w = open(tcpreply.fileName, O_WRONLY) < 0)
+      if ((fd_w = open(tcpreply.fileName, O_WRONLY | O_CREAT, 0777)) < 0)
       {
         while (i < tcpreply.fileSize && (nread = read(sd, &buf, sizeof(char))) > 0)
         {
@@ -129,6 +130,8 @@ int main(int argc, char *argv[])
       }
       else
       {
+        printf("# FD: %d\n", fd_w);
+
         while (i < tcpreply.fileSize && (nread = read(sd, &buf, sizeof(char))) > 0)
         {
           nwrite = write(fd_w, &buf, sizeof(char));

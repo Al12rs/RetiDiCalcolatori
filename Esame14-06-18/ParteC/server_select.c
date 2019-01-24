@@ -71,10 +71,10 @@ int main(int argc, char **argv)
   TCPAnswer tcpreply;
 
   int vocTrovata, consTrovata;
-  char buf;
   DIR *dir;
   struct dirent *dd;
   int fd_file;
+  long bytes;
 
   //CONTROLLO ARGOMENTI
   if (argc != 2)
@@ -219,12 +219,13 @@ int main(int argc, char **argv)
       }
       else
       {
-        strcat(reqUDP.fileName, ".edited");
-        if ((fd_w = open(editedFileName, O_WRONLY)) < 0)
+        strcpy(editedFileName, reqUDP.fileName);
+        strcat(editedFileName, ".edited");
+        if ((fd_w = open(editedFileName, O_CREAT | O_WRONLY, 0777)) < 0)
         {
           risUDP = -1;
           close(fd_r);
-          printf("# Fallita apertura file %s.\n", editedFileName);
+          printf("# Fallita apertura file %s\n", editedFileName);
         }
         else
         {
@@ -304,8 +305,10 @@ int main(int argc, char **argv)
         {
           printf("# Server (figlio): letti %d bytes \n", nread);
           printf("# Server (figlio): direttorio: %s\n", direttorio);
-          strcopy(dirWithTrailingSlash, direttorio);
-          strcat(dirWithTrailingSlash, "/");
+          strcpy(dirWithTrailingSlash, direttorio);
+          if (direttorio[strlen(direttorio) - 1] != '/'){
+            strcat(dirWithTrailingSlash, "/");
+          }
 
           if ((dir = opendir(direttorio)) == NULL)
           {
@@ -322,12 +325,12 @@ int main(int argc, char **argv)
 
           while ((dd = readdir(dir)) != NULL)
           {
-            strcopy(filePath, dirWithTrailingSlash);
+            strcpy(filePath, dirWithTrailingSlash);
             strcat(filePath, dd->d_name);
-            printf("# Server (figlio): filePath: %s\n", filePath);
 
             if (is_regular_file(filePath))
             {
+              printf("# Server (figlio): regular filePath: %s\n", filePath);
               consTrovata = 0;
               vocTrovata = 0;
               for (i = 0; i < strlen(dd->d_name) && !(consTrovata && vocTrovata); i++)
@@ -336,8 +339,9 @@ int main(int argc, char **argv)
                 {
                   vocTrovata = 1;
                 }
-                else if (!consTrovata && (((buf >= 'A') && (buf <= 'Z')) || ((buf >= 'a') && (buf <= 'z'))) &&
-                  index(vowels, dd->d_name[i]) == NULL)
+                else if (!consTrovata && (((dd->d_name[i] >= 'A') && (dd->d_name[i] <= 'Z')) || 
+                        ((dd->d_name[i] >= 'a') && (dd->d_name[i] <= 'z'))) &&
+                         index(vowels, dd->d_name[i]) == NULL)
                 {
                   consTrovata = 1;
                 }
@@ -347,14 +351,19 @@ int main(int argc, char **argv)
               {
                 printf("# Server (figlio): filename valido: %s\n", dd->d_name);
 
-                fd_file = open(dd->d_name, O_RDONLY);
+                fd_file = open(filePath, O_RDONLY);
                 if (fd_file < 0)
                 {
                   printf("# Errore apertura file.\n");
                   continue;
                 }
-                tcpreply.fileSize = lseek(fd_file, 0L, SEEK_END);
+                tcpreply.fileSize = lseek(fd_file, 0, SEEK_END);
+                //rewind to the start
+                lseek(fd_file, 0L, SEEK_SET);
+
                 strcpy(tcpreply.fileName, dd->d_name);
+
+                printf("# Server (figlio): Invio richiesta: Filename %s , filesize: %ld\n", tcpreply.fileName, tcpreply.fileSize);
                 if (write(conn_sd, &tcpreply, sizeof(tcpreply)) <= 0)
                 {
                   perror("# Errore nell'invio del risultato\n");
@@ -365,9 +374,13 @@ int main(int argc, char **argv)
                 }
 
                 //ciclo di lettura e invio file
-                while (read(fd_file, &buf, sizeof(buf)) > 0)
+                bytes = 0;
+                while ((nread = read(fd_file, &buf, sizeof(char))) > 0)
                 {
-                  if (write(conn_sd, &buf, sizeof(buf)) < 0)
+                  bytes++;
+                  //printf("# Dentro il ciclo di invio: %ld bytes\n", bytes);
+
+                  if (write(conn_sd, &buf, sizeof(char)) < 0)
                   {
                     perror("# Errore nell'invio di byte\n");
                     //fallita comunicazione con questo client, figlio non ha più ragione d'esistere
@@ -375,9 +388,9 @@ int main(int argc, char **argv)
                     close(conn_sd);
                     exit(1);
                   }
-
+                  
                 } //while invio file
-                printf("# Invio file completato.\n");
+                printf("# File inviato.\n");
                 close(fd_file);
 
               } //if valid
@@ -385,7 +398,9 @@ int main(int argc, char **argv)
             } //if regular
 
           } //ciclo sui file
-          
+
+          printf("# Inviati tutti i file.\n");
+
           //send tcpreply with lenght =-1 to signify end of files to send
           tcpreply.fileSize = -1;
           if (write(conn_sd, &tcpreply, sizeof(tcpreply)) <= 0)
@@ -396,7 +411,7 @@ int main(int argc, char **argv)
             exit(1);
           }
 
-        } //while nread
+        } //while richieste direttori
 
         // Libero risorse
         printf("Figlio TCP terminato, libero risorse e chiudo. \n");
