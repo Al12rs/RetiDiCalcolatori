@@ -22,9 +22,13 @@ class ServerThread extends Thread {
     // Creazione input/output Streams della socket.
     DataInputStream inSock;
     DataOutputStream outSock;
+    ObjectOutputStream objectOut = null;
+    ObjectInputStream objectIn = null;
     try {
       inSock = new DataInputStream(clientSocket.getInputStream());
       outSock = new DataOutputStream(clientSocket.getOutputStream());
+      objectOut = new ObjectOutputStream(outSock);
+      objectIn = new ObjectInputStream(inSock);
     } catch (IOException ioe) {
       System.out.println("Problemi nella creazione degli stream di input/output su socket: ");
       ioe.printStackTrace();
@@ -49,68 +53,40 @@ class ServerThread extends Thread {
           // Visualizza eventi di un certo tipo e luogo
           if (requestType.equals("VET")) {
 
-            // lettura path della cartella source
+            // lettura dei filtri
             String tipo = null;
             String luogo = null;
             tipo = inSock.readUTF();
             luogo = inSock.readUTF();
 
-            long minDim = inSock.readLong();
-
-            File currentDir = new File(folderName);
-            if (currentDir.exists() && currentDir.isDirectory()) {
-              File[] files = currentDir.listFiles();
-
-              // iterate on files in currentDir
-              for (int i = 0; i < files.length; i++) {
-                File currentFile = files[i];
-                System.out.println("File con nome: " + currentFile.getName());
-                if (currentFile.isFile() && minDim <= currentFile.length()) {
-
-                  // Send fileName
-                  outSock.writeUTF(currentFile.getName());
-
-                  // Send fileSize
-                  outSock.writeLong(currentFile.length());
-
-                  // Send file
-                  FileUtility.trasferisci_N_byte_file_binario(
-                      new DataInputStream(new FileInputStream(currentFile.getAbsolutePath())), outSock,
-                      currentFile.length());
-
-                } else
-                  System.out.println("File saltato");
-              } // fine for
-
-            } // if currentDir.exists
-
-            // finiti i file da trasferire
-            outSock.writeUTF("#");
-
-          } // transfer files request
-          // Eliminate Word Request
-          else if (requestType.equals("VEP")) {
-            System.out.println("Richiesta Elimina");
-            String wordToDelete;
-            String targetFileName;
-            int removedCount = 0;
-            char[] separators = { ' ', '\n' };
-
-            targetFileName = inSock.readUTF();
-
-            wordToDelete = inSock.readUTF();
-
-            System.out.println("Elimina " + wordToDelete +" da "+ targetFileName);
-
-            try {
-              removedCount = FileUtility.removeWordFromFile(targetFileName, wordToDelete, separators);
-            } catch (IOException e) {
-              System.out.println("Errori durante la lettura/scrittura files.");
-              removedCount = -1;
+            for (int i = 0; i < listaEventi.length; i++) {
+              if (listaEventi[i].tipo.equals(tipo) && listaEventi[i].luogo.equals(luogo)) {
+                objectOut.writeObject(listaEventi[i]);
+              }
             }
-            outSock.writeInt(removedCount);
+            
+            //segnalo la fine di trasmissione con un evento vuoto:
+            objectOut.writeObject(new Evento());
 
-          } // eliminate word request
+
+          } //First request type
+          // Second Reuqest type
+          else if (requestType.equals("VEP")) {
+            //System.out.println("# Richiesta Elimina");
+            
+            int prezzo = inSock.readInt();
+
+            for (int i = 0; i < listaEventi.length; i++) {
+              if (listaEventi[i].prezzo < prezzo && listaEventi[i].disponibilita > 0) {
+                objectOut.writeObject(listaEventi[i]);
+              }
+            }
+            
+            //segnalo la fine di trasmissione con un evento vuoto:
+            objectOut.writeObject(new Evento());
+                        
+            
+          } // second request
         }//while (ciclo richieste)
       } catch (EOFException eof) {
         System.out.println("Raggiunta la fine delle ricezioni, chiudo...");

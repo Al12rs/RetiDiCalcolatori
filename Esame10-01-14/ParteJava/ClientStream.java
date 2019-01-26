@@ -32,6 +32,8 @@ public class ClientStream {
     Socket socket = null;
     DataInputStream inSock = null;
     DataOutputStream outSock = null;
+    ObjectOutputStream objectOut = null;
+    ObjectInputStream objectIn = null;
 
     try {
       socket = new Socket(addr, port);
@@ -39,6 +41,8 @@ public class ClientStream {
       System.out.println("Creata la socket: " + socket);
       inSock = new DataInputStream(socket.getInputStream());
       outSock = new DataOutputStream(socket.getOutputStream());
+      objectOut = new ObjectOutputStream(outSock);
+      objectIn = new ObjectInputStream(inSock);
     } catch (IOException ioe) {
       System.out.println("Problemi nella creazione degli stream su socket: ");
       ioe.printStackTrace();
@@ -69,36 +73,23 @@ public class ClientStream {
         // INVIO DATI RICHIESTA
         outSock.writeUTF(tipo);
         outSock.writeUTF(luogo);
+        Evento receivedEvent = null;
 
         try {
-          Evento[] eventiRichiesti;
-          int numeroEventi;
-
-          numeroEventi = inSock.readInt();
-          eventiRichiesti = new Evento[numeroEventi];
-
           // RICEZIONE EVENTI VALIDI
-          for (int i = 0; i < numeroEventi; i++) {
-            eventiRichiesti[i] = new Evento();
-            eventiRichiesti[i].descrizione = inSock.readUTF();
-            eventiRichiesti[i].tipo = inSock.readUTF();
-            eventiRichiesti[i].data = inSock.readUTF();
-            eventiRichiesti[i].luogo = inSock.readUTF();
-            eventiRichiesti[i].disponibilita = inSock.readInt();
-            eventiRichiesti[i].prezzo = inSock.readInt();
-          }
-
-          // STAMPA DELLA LISTA
-          if(numeroEventi > 0){
-            for (int i = 0; i < numeroEventi; i++) {
-              System.out.println(
-                  "Evento " + i + "\nDesc\t" + eventiRichiesti[i].descrizione + "\nTipo\t" + eventiRichiesti[i].tipo
-                      + "\nData\t" + eventiRichiesti[i].data + "\nLuogo\t" + eventiRichiesti[i].luogo + "\nDisp\t"
-                      + eventiRichiesti[i].disponibilita + "\nPrezzo\t" + eventiRichiesti[i].prezzo);
+          int i = 0;
+          while ((receivedEvent = (Evento) objectIn.readObject()) != null) {
+            if (receivedEvent.descrizione.equals("L")) {
+              break;
+            } else {
+              i++;
+              System.out.println("Evento " + i + "\nDesc\t" + receivedEvent.descrizione + "\nTipo\t"
+                  + receivedEvent.tipo + "\nData\t" + receivedEvent.data + "\nLuogo\t" + receivedEvent.luogo
+                  + "\nDisp\t" + receivedEvent.disponibilita + "\nPrezzo\t" + receivedEvent.prezzo);
             }
-          }else{
-            System.out.println("Non ci sono eventi disponibili");
           }
+          System.out.println("No more events.");
+
 
         } catch (SocketTimeoutException ste) {
           System.out.println("Timeout scattato: ");
@@ -137,35 +128,22 @@ public class ClientStream {
         outSock.writeInt(prezzo);
 
         // RICEZIONE ESITO DELLA RICHIESTA
+        Evento receivedEvent = null;
+
         try {
-          Evento[] eventiRichiesti;
-          int numeroEventi;
-
-          numeroEventi = inSock.readInt();
-          eventiRichiesti = new Evento[numeroEventi];
-
           // RICEZIONE EVENTI VALIDI
-          for (int i = 0; i < numeroEventi; i++) {
-            eventiRichiesti[i] = new Evento();
-            eventiRichiesti[i].descrizione = inSock.readUTF();
-            eventiRichiesti[i].tipo = inSock.readUTF();
-            eventiRichiesti[i].data = inSock.readUTF();
-            eventiRichiesti[i].luogo = inSock.readUTF();
-            eventiRichiesti[i].disponibilita = inSock.readInt();
-            eventiRichiesti[i].prezzo = inSock.readInt();
-          }
-
-          // STAMPA DELLA LISTA
-          if(numeroEventi > 0){
-            for (int i = 0; i < numeroEventi; i++) {
-              System.out.println(
-                  "Evento " + i + "\nDesc\t" + eventiRichiesti[i].descrizione + "\nTipo\t" + eventiRichiesti[i].tipo
-                      + "\nData\t" + eventiRichiesti[i].data + "\nLuogo\t" + eventiRichiesti[i].luogo + "\nDisp\t"
-                      + eventiRichiesti[i].disponibilita + "\nPrezzo\t" + eventiRichiesti[i].prezzo);
+          int i = 0;
+          while ((receivedEvent = (Evento) objectIn.readObject()) != null) {
+            if (receivedEvent.descrizione.equals("L")) {
+              break;
+            } else {
+              i++;
+              System.out.println("Evento " + i + "\nDesc\t" + receivedEvent.descrizione + "\nTipo\t"
+                  + receivedEvent.tipo + "\nData\t" + receivedEvent.data + "\nLuogo\t" + receivedEvent.luogo
+                  + "\nDisp\t" + receivedEvent.disponibilita + "\nPrezzo\t" + receivedEvent.prezzo);
             }
-          }else{
-            System.out.println("Non ci sono eventi disponibili");
           }
+          System.out.println("No more events.");
           
         } catch (SocketTimeoutException ste) {
           System.out.println("Timeout scattato: ");
