@@ -64,7 +64,6 @@ public class RMI_Client {
 							System.out.print("Inserire un numero per la disponibilità: ");
 							continue;
 						}
-						break;
 					}
 					System.out.print("# prezzo (int): ");
 					while (true) {
@@ -75,14 +74,14 @@ public class RMI_Client {
 							System.out.print("Inserire un numero per prezzo: ");
 							continue;
 						}
-						break;
 					}
 
 
 					// Invocazione remota
+					int res = -1;
 					try {
-						int result = inserimento_evento(newEvent);
-						if (result == 0)
+						res = serverRMI.inserimento_evento(newEvent);
+						if (res == 0)
 							System.out.println("Operazione eseguita correttamente.");
 						else
 							System.out.println("Errore lato server");
@@ -107,7 +106,6 @@ public class RMI_Client {
 							System.out.print("Inserire un numero valido di biglietti da acquistare: ");
 							continue;
 						}
-						break;
 					}
 																														
 					int res = -1;

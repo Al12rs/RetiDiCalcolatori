@@ -7,7 +7,7 @@ public class RMI_Server extends UnicastRemoteObject implements RMI_interfaceFile
 	public static final long serialVersionUID = 1;
 
 	private Evento[] listaEventi;
-	private final int MAX_EVENTI = 10;
+	private final int MAX_EVENTI = 4;
 
 	// Costruttore
 	public RMI_Server() throws RemoteException {
