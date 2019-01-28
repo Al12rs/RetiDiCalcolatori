@@ -30,7 +30,7 @@
 typedef struct
 {
   char fileName[PATH_LENGTH];
-  char keyword[WORD_LENGTH]
+  char keyword[WORD_LENGTH];
 } UDPRequest;
 
 typedef UDPRequest TCPRequest;
@@ -298,7 +298,7 @@ int main(int argc, char **argv)
           printf("# Server (figlio): letti %d bytes \n", nread);
           printf("# Server (figlio): richiesta: %s - %s\n", tcpreq.fileName, tcpreq.keyword);
 
-          if ((fd_r = open(reqUDP.fileName, O_RDONLY)) < 0)
+          if ((fd_r = open(tcpreq.fileName, O_RDONLY)) < 0)
           {
             strcpy(risTCP, "*");
             if (write(conn_sd, risTCP, sizeof(risTCP)) <= 0)
@@ -309,14 +309,17 @@ int main(int argc, char **argv)
               exit(1);
             }
             printf("# Fallita apertura file %s.\n", tcpreq.fileName);
+            perror("Apertura file: \n");
             continue;
           }
           else
           {
+            printf("Esploro il file\n");
             currentWord[0] = '\0';
             currentLine[0] = '\0';
             buf[1] = '\0';
             isInCurrentLine = 0;
+            printf("Prima del ciclo\n");
             while ((nread = read(fd_r, buf, sizeof(char))) > 0)
             {
               strcat(currentLine, buf);
@@ -324,7 +327,7 @@ int main(int argc, char **argv)
               if (!isInCurrentLine){
                 if (buf[0] == '\n' || buf[0] == ' ')
                 {
-                  if (strcmp(currentWord, reqUDP.keyword) == 0)
+                  if (strcmp(currentWord, tcpreq.keyword) == 0)
                   {
                     isInCurrentLine = 1;
                   }
@@ -337,12 +340,17 @@ int main(int argc, char **argv)
               }
 
               if (buf[0] == '\n'){
-                if (write(conn_sd, currentLine, sizeof(currentLine)) <= 0)
+                if (isInCurrentLine)
                 {
-                  perror("# Errore nell'invio del risultato\n");
-                  //fallita comunicazione con questo client, figlio non ha più ragione d'esistere
-                  close(conn_sd);
-                  exit(1);
+                  printf("Rispondo: %s\n", currentLine);
+                  isInCurrentLine = 0;
+                  if (write(conn_sd, currentLine, sizeof(currentLine)) <= 0)
+                  {
+                    perror("# Errore nell'invio del risultato\n");
+                    //fallita comunicazione con questo client, figlio non ha più ragione d'esistere
+                    close(conn_sd);
+                    exit(1);
+                  }
                 }
                 currentLine[0] = '\0';
               }

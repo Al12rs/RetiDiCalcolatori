@@ -110,7 +110,7 @@ int main(int argc, char *argv[])
     // Lettura risposta dal server
     printf("# Ricevo i file:\n");
     i = 0;
-    while ((nread = read(sd, &tcpreply, sizeof(tcpreply))) > 0)
+    while ((nread = read(sd, tcpreply, sizeof(tcpreply))) > 0)
     {
       if (strcmp(tcpreply, "#") == 0)
       {
@@ -123,7 +123,7 @@ int main(int argc, char *argv[])
       }*/
 
       i++;
-      printf("# Linea Ricevuta (%d): %s\n", tcpreply);
+      printf("# Linea Ricevuta (%d): %s\n",i, tcpreply);
       
     } // ricezione delle linee
     printf("# Linee esaurite\n");
