@@ -14,10 +14,12 @@
 //Defines
 #define LINE_LENGTH 256
 #define FILE_LENGTH 256
+#define WORD_LENGTH 32
 
 //structs
 typedef struct{
   char fileName[FILE_LENGTH];
+  char keyword[WORD_LENGTH];
 } UDPRequest;
 
 int main(int argc, char **argv)
@@ -98,10 +100,13 @@ int main(int argc, char **argv)
   printf("%s\n", loopString);
 
   //Loop of requests.
-  while(scanf("%s", fileName) == 1){
+  while(scanf("%s", req.fileName) == 1){
     while((c=getchar()) != '\n'); //consumo fine linea
-    strcpy(req.fileName, fileName);
-    
+
+    printf("Insert search keyword: \n");
+    scanf("%s", req.keyword);
+    while ((c = getchar()) != '\n'); //consumo fine linea
+
     //Invio richiesta.
     len = sizeof(servaddr);
     printf("Send request.\n");
@@ -114,6 +119,7 @@ int main(int argc, char **argv)
     }
 
     //Ricezione risultato.
+    //ris è un intero: per maggiore portabilità usare ntohs()
     if (recvfrom(sd, &ris, sizeof(ris), 0, (struct sockaddr *) &servaddr, &len) < 0) {
       perror("Recvfrom");
       //Error is not fatal, continue loop.
@@ -124,8 +130,10 @@ int main(int argc, char **argv)
     //Display result.
     if(ris < 0){
       printf("# Client: file does not exist.\n");
+    } else if(ris == 0){
+      printf("# Client: occurrences not found.\n");
     } else {
-      printf("# Client: occurrences deleted: %d\n", ris);
+      printf("# Client: occurrences found: %d\n", ris);
     }
 
     printf("%s\n", loopString);

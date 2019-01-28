@@ -23,13 +23,17 @@
 //Defines
 #define PATH_LENGTH 256
 #define LINE_LENGTH 256
+#define WORD_LENGTH 32
 #define max(a, b) ((a) > (b) ? (a) : (b))
 
 //Structs
 typedef struct
 {
   char fileName[PATH_LENGTH];
+  char keyword[WORD_LENGTH]
 } UDPRequest;
+
+typedef UDPRequest TCPRequest;
 
 typedef struct
 {
@@ -64,13 +68,17 @@ int main(int argc, char **argv)
   fd_set rset;
   UDPRequest reqUDP;
   //user vars
+  TCPRequest tcpreq;
+  char risTCP[LINE_LENGTH];
   int i, trovato, risUDP;
   int fd_r, fd_w;
-  char editedFileName[PATH_LENGTH], direttorio[PATH_LENGTH], vowels[11], buf;
+  char editedFileName[PATH_LENGTH], direttorio[PATH_LENGTH], vowels[11], buf[2];
   char filePath[PATH_LENGTH], dirWithTrailingSlash[PATH_LENGTH];
-  TCPAnswer tcpreply;
 
-  int vocTrovata, consTrovata;
+  char currentLine[LINE_LENGTH];
+  char currentWord[WORD_LENGTH];
+
+  int isInCurrentLine;
   DIR *dir;
   struct dirent *dd;
   int fd_file;
@@ -219,42 +227,26 @@ int main(int argc, char **argv)
       }
       else
       {
-        strcpy(editedFileName, reqUDP.fileName);
-        strcat(editedFileName, ".edited");
-        if ((fd_w = open(editedFileName, O_CREAT | O_WRONLY, 0777)) < 0)
+        risUDP = 0;
+        currentWord[0] = '\0';
+        buf[1] = '\0';
+        while ((nread = read(fd_r, buf, sizeof(char))) > 0)
         {
-          risUDP = -1;
-          close(fd_r);
-          printf("# Fallita apertura file %s\n", editedFileName);
-        }
-        else
-        {
-          risUDP = 0;
-          while ((nread = read(fd_r, &buf, sizeof(char))) > 0)
+          if (buf[0] == '\n' || buf[0] == ' ')
           {
-            if (((buf >= 'A') && (buf <= 'Z')) || ((buf >= 'a') && (buf <= 'z')))
+            if (strcmp(currentWord, reqUDP.keyword) == 0)
             {
-              if (index(vowels, buf) != NULL)
-              {
-                write(fd_w, &buf, sizeof(char));
-              }
-              else
-              {
-                risUDP++;
-              }
+              risUDP = 1;
+              break;
             }
-            else
-            {
-              write(fd_w, &buf, sizeof(char));
-            }
-          } //while lettura file
-          close(fd_r);
-          close(fd_w);
-          if (rename(editedFileName, reqUDP.fileName) < 0)
-          {
-            perror("rename failed: ");
+            currentWord[0] = '\0';
           }
-        }
+          else
+          {
+            strcat(currentWord, buf);
+          }
+        } //while lettura file
+        close(fd_r);
       }
 
       //INVIO RISPOSTA UDP
@@ -301,109 +293,67 @@ int main(int argc, char **argv)
           printf("Server (figlio): host client e' %s \n", hostTcp->h_name);
 
         // Leggo le richieste del client
-        while ((nread = read(conn_sd, direttorio, sizeof(direttorio))) > 0)
+        while ((nread = read(conn_sd, &tcpreq, sizeof(tcpreq))) > 0)
         {
           printf("# Server (figlio): letti %d bytes \n", nread);
-          printf("# Server (figlio): direttorio: %s\n", direttorio);
-          strcpy(dirWithTrailingSlash, direttorio);
-          if (direttorio[strlen(direttorio) - 1] != '/'){
-            strcat(dirWithTrailingSlash, "/");
-          }
+          printf("# Server (figlio): richiesta: %s - %s\n", tcpreq.fileName, tcpreq.keyword);
 
-          if ((dir = opendir(direttorio)) == NULL)
+          if ((fd_r = open(reqUDP.fileName, O_RDONLY)) < 0)
           {
-            tcpreply.fileSize = -2;
-            if (write(conn_sd, &tcpreply, sizeof(tcpreply)) <= 0)
+            strcpy(risTCP, "*");
+            if (write(conn_sd, risTCP, sizeof(risTCP)) <= 0)
             {
               perror("# Errore nell'invio del risultato\n");
               //fallita comunicazione con questo client, figlio non ha più ragione d'esistere
               close(conn_sd);
               exit(1);
             }
+            printf("# Fallita apertura file %s.\n", tcpreq.fileName);
             continue;
           }
-
-          while ((dd = readdir(dir)) != NULL)
+          else
           {
-            strcpy(filePath, dirWithTrailingSlash);
-            strcat(filePath, dd->d_name);
-
-            if (is_regular_file(filePath))
+            currentWord[0] = '\0';
+            currentLine[0] = '\0';
+            buf[1] = '\0';
+            isInCurrentLine = 0;
+            while ((nread = read(fd_r, buf, sizeof(char))) > 0)
             {
-              printf("# Server (figlio): regular filePath: %s\n", filePath);
-              consTrovata = 0;
-              vocTrovata = 0;
-              for (i = 0; i < strlen(dd->d_name) && !(consTrovata && vocTrovata); i++)
-              {
-                if (!vocTrovata && index(vowels, dd->d_name[i]) != NULL)
+              strcat(currentLine, buf);
+
+              if (!isInCurrentLine){
+                if (buf[0] == '\n' || buf[0] == ' ')
                 {
-                  vocTrovata = 1;
+                  if (strcmp(currentWord, reqUDP.keyword) == 0)
+                  {
+                    isInCurrentLine = 1;
+                  }
+                  currentWord[0] = '\0';
                 }
-                else if (!consTrovata && (((dd->d_name[i] >= 'A') && (dd->d_name[i] <= 'Z')) || 
-                        ((dd->d_name[i] >= 'a') && (dd->d_name[i] <= 'z'))) &&
-                         index(vowels, dd->d_name[i]) == NULL)
+                else
                 {
-                  consTrovata = 1;
+                  strcat(currentWord, buf);
                 }
-              } //for char in filename
+              }
 
-              if (consTrovata && vocTrovata)
-              {
-                printf("# Server (figlio): filename valido: %s\n", dd->d_name);
-
-                fd_file = open(filePath, O_RDONLY);
-                if (fd_file < 0)
-                {
-                  printf("# Errore apertura file.\n");
-                  continue;
-                }
-                tcpreply.fileSize = lseek(fd_file, 0, SEEK_END);
-                //rewind to the start
-                lseek(fd_file, 0L, SEEK_SET);
-
-                strcpy(tcpreply.fileName, dd->d_name);
-
-                printf("# Server (figlio): Invio richiesta: Filename %s , filesize: %ld\n", tcpreply.fileName, tcpreply.fileSize);
-                if (write(conn_sd, &tcpreply, sizeof(tcpreply)) <= 0)
+              if (buf[0] == '\n'){
+                if (write(conn_sd, currentLine, sizeof(currentLine)) <= 0)
                 {
                   perror("# Errore nell'invio del risultato\n");
                   //fallita comunicazione con questo client, figlio non ha più ragione d'esistere
-                  close(fd_file);
                   close(conn_sd);
                   exit(1);
                 }
+                currentLine[0] = '\0';
+              }
+            } //while lettura file
+            close(fd_r);
+          }
 
-                //ciclo di lettura e invio file
-                bytes = 0;
-                while ((nread = read(fd_file, &buf, sizeof(char))) > 0)
-                {
-                  bytes++;
-                  //printf("# Dentro il ciclo di invio: %ld bytes\n", bytes);
-
-                  if (write(conn_sd, &buf, sizeof(char)) < 0)
-                  {
-                    perror("# Errore nell'invio di byte\n");
-                    //fallita comunicazione con questo client, figlio non ha più ragione d'esistere
-                    close(fd_file);
-                    close(conn_sd);
-                    exit(1);
-                  }
-                  
-                } //while invio file
-                printf("# File inviato.\n");
-                close(fd_file);
-
-              } //if valid
-
-            } //if regular
-
-          } //ciclo sui file
-
-          printf("# Inviati tutti i file.\n");
-
-          //send tcpreply with lenght =-1 to signify end of files to send
-          tcpreply.fileSize = -1;
-          if (write(conn_sd, &tcpreply, sizeof(tcpreply)) <= 0)
+          
+          //send risTCP with "#" to signify end of lines
+          strcpy(risTCP, "#");
+          if (write(conn_sd, risTCP, sizeof(risTCP)) <= 0)
           {
             perror("# Errore nell'invio del risultato\n");
             //fallita comunicazione con questo client, figlio non ha più ragione d'esistere

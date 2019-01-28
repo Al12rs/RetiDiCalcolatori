@@ -16,12 +16,13 @@
 //defines
 #define LINE_LENGTH 256
 #define PATH_LENGTH 256
+#define WORD_LENGTH 32
 //structs
 typedef struct
 {
   char fileName[PATH_LENGTH];
-  long fileSize;
-} TCPAnswer;
+  char keyword[WORD_LENGTH];
+} TCPRequest;
 
 int main(int argc, char *argv[])
 {
@@ -30,10 +31,9 @@ int main(int argc, char *argv[])
   struct hostent *host;
   struct sockaddr_in servaddr;
   //user var
-  char direttorio[PATH_LENGTH], buf;
-  int fd_w;
-  long i;
-  TCPAnswer tcpreply;
+  char tcpreply[LINE_LENGTH];
+  int i;
+  TCPRequest tcpreq;
 
   // CONTROLLO ARGOMENTI
   if (argc != 3)
@@ -92,59 +92,44 @@ int main(int argc, char *argv[])
 
   // CORPO DEL CLIENT:
   //ciclo di accettazione di richieste da utente
-  printf("# Inserire nome direttorio EOF per terminare: \n");
-  while (scanf("%s", direttorio) == 1)
+  printf("# Inserire nome file EOF per terminare: \n");
+  while (scanf("%s", tcpreq.fileName) == 1)
   {
     // Eliminazione del fine linea
-    while (getchar() != '\n')
-      ;
+    while (getchar() != '\n');
+
+    printf("Inserire keyword: \n");
+    scanf("%s", tcpreq.keyword);
+    while (getchar() != '\n'); //consumo fine linea
 
     // Scrittura richiesta al server
-    printf("# Invio il direttorio al server: %s\n", direttorio);
-    nwrite = write(sd, direttorio, sizeof(direttorio));
+    printf("# Invio la richiesta al server: \n");
+    nwrite = write(sd, &tcpreq, sizeof(tcpreq));
     printf("# Bytes scritti al server %d char\n", nwrite);
 
     // Lettura risposta dal server
     printf("# Ricevo i file:\n");
+    i = 0;
     while ((nread = read(sd, &tcpreply, sizeof(tcpreply))) > 0)
     {
-      if (tcpreply.fileSize == -1)
+      if (strcmp(tcpreply, "#") == 0)
       {
         break;
       }
-      if (tcpreply.fileSize == -2)
+      /*if (tcpreply.fileSize == -2)
       {
         printf("Errore server: Impossibile aprire direttorio\n");
         break;
-      }
+      }*/
 
-      printf("# Ricevo il file %s di dimensione %ld byte\n", tcpreply.fileName, tcpreply.fileSize);
-      i = 0;
-      if ((fd_w = open(tcpreply.fileName, O_WRONLY | O_CREAT, 0777)) < 0)
-      {
-        while (i < tcpreply.fileSize && (nread = read(sd, &buf, sizeof(char))) > 0)
-        {
-          i++;
-        }
-        printf("# Trasferimento fallito. Passiamo al successivo\n");
-      }
-      else
-      {
-        printf("# FD: %d\n", fd_w);
-
-        while (i < tcpreply.fileSize && (nread = read(sd, &buf, sizeof(char))) > 0)
-        {
-          nwrite = write(fd_w, &buf, sizeof(char));
-          i++;
-        }
-        close(fd_w);
-        printf("# Ricevuto\n");
-      }
-    } // ricezione tutti i files
-    printf("# Fine trasferimento\n");
+      i++;
+      printf("# Linea Ricevuta (%d): %s\n", tcpreply);
+      
+    } // ricezione delle linee
+    printf("# Linee esaurite\n");
 
     //continuazione del ciclo
-    printf("# Inserire nome direttorio, EOF per terminare: \n");
+    printf("# Inserire nome file, EOF per terminare: \n");
 
   } //while richieste
 
