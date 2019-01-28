@@ -44,6 +44,9 @@ int main(int argc, char **argv)
   struct sockaddr_in clientaddr, servaddr;
   int port, nread, sd, len;
   char c, loopString[256];
+  // Se si necessita rendere il programma funzionale su sistemi
+  // a differente standard bigendian/littleendian, usare htons e ntohs
+  // per assicurarsi la lettura corretta dei dati.
   //UDPRequest req;
   //user variables
   UDPAnswer ris;
@@ -112,8 +115,8 @@ int main(int argc, char **argv)
 
 
   //CORPO DEL CLIENT
-  strcpy(loopString, "# Inserisci prezzo massimo:\n");
-  printf("%s", loopString);
+  strcpy(loopString, "# Inserisci prezzo massimo:");
+  printf("%s\n", loopString);
 
   //Loop of requests.
   while(scanf("%d", &prezzoMassimo) == 1){
@@ -144,7 +147,7 @@ int main(int argc, char **argv)
     }
     else
     {
-      printf("Descrizione - tipo - data - luogo - disponibilita - prezzo");
+      printf("Descrizione - tipo - data - luogo - disponibilita - prezzo\n");
       for (i = 0; i < ris.numValidi; i++)
       {
         printf("%s - %s - %s - %s - %d - %d\n", ris.vettoreEventi[i].descrizione,

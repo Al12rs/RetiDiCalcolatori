@@ -113,16 +113,16 @@ int main(int argc, char **argv)
   int port, listen_sd, conn_sd, udp_sd, nread, maxfdp1, len;
   const int on = 1;
   fd_set rset;
+  // Se si necessita rendere il programma funzionale su sistemi
+  // a differente standard bigendian/littleendian, usare htons e ntohs 
+  // per assicurarsi la lettura corretta dei dati.
   int reqUDP;
   //user vars
-  int i, trovato;
-  int fd_r, fd_w;
+  int i;
   TCPRequest tcpreq;
   UDPAnswer udpReply;
   Evento tcpreply;
   int numEventi;
-
-  int vocTrovata, consTrovata;
 
   //CONTROLLO ARGOMENTI
   if (argc != 2)
