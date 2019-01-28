@@ -27,21 +27,39 @@ public class RMI_Server extends UnicastRemoteObject implements RMI_interfaceFile
   {
     ArrayList<String> result = new ArrayList<String>();
     BufferedReader fileReader = null;
-    String buffer = null;
+    String currentLine = null;
+    boolean foundKeyword = false;
     File originalDirectory = new File(directoryPath);
+    StringBuilder builder = new StringBuilder();
 
     if (originalDirectory.isDirectory()) {
       for (File f : originalDirectory.listFiles()) {
         if (!f.isDirectory()) {
           try 
-          {          
+          {    
             fileReader = new BufferedReader(new FileReader(f));
-            while((buffer = fileReader.readLine()) != null)
+            foundKeyword = false;
+            while((currentLine = fileReader.readLine()) != null && !foundKeyword)
             {
-              if (buffer.indexOf(keyword) != -1) {
-                result.add(f.getName());
-                break;
+              for (int i = 0; i < currentLine.length(); i++) {
+                if (currentLine.charAt(i) == ' ' || currentLine.charAt(i) == '\n') {
+                  if (builder.toString().equals(keyword)) {
+                    result.add(f.getName());
+                    foundKeyword = true;
+                    break;
+                  } else {
+                    builder.setLength(0);
+                  }
+                } else {
+                  builder.append(currentLine.charAt(i));
+                }
               }
+              // currentline does not contain \n so we check the last buffered word
+              if (!foundKeyword && builder.toString().equals(keyword)) {
+                result.add(f.getName());
+                foundKeyword = true;
+              }
+              builder.setLength(0);
             }
             fileReader.close();                        
           } 
@@ -64,6 +82,7 @@ public class RMI_Server extends UnicastRemoteObject implements RMI_interfaceFile
     String currentLine;
     boolean foundKeyword = false;
     File originalFile = new File(fileName);
+    StringBuilder builder = new StringBuilder();    
     if (!originalFile.exists()) {
       System.out.println("# Server: Error: " + fileName + " not found.");
       return -1;
@@ -73,9 +92,23 @@ public class RMI_Server extends UnicastRemoteObject implements RMI_interfaceFile
 
       while ((currentLine = originalReader.readLine()) != null) {
         lineCount++;
-        if (currentLine.contains(keyword)) {
+        for (int i = 0; !foundKeyword && i < currentLine.length(); i++) {
+          if (currentLine.charAt(i) == ' ' || currentLine.charAt(i) == '\n') {
+            if (builder.toString().equals(keyword)) {
+              foundKeyword = true;
+              break;
+            } else {
+              builder.setLength(0);
+            }
+          } else {
+            builder.append(currentLine.charAt(i));
+          }
+        }
+        // currentline does not contain \n so we check the last buffered word
+        if (!foundKeyword && builder.toString().equals(keyword)) {
           foundKeyword = true;
         }
+        builder.setLength(0);
       }
       originalReader.close();
 
