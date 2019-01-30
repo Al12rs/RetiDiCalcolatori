@@ -1,6 +1,9 @@
 # Java
-javac -d ./bin RMI_interfaceFile.java RMI_Client.java RMI_Server.java
+
+Stream:
+javac -d ./bin ServerStream.java ClientStream.java
 RMI:
+javac -d ./bin RMI_interfaceFile.java RMI_Client.java RMI_Server.java
 With a local registry
   Compile *.java files using the "javac" command
   Compile the stubs using "rmic -vcompat RMI_Server"

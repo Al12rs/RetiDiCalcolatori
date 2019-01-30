@@ -22,7 +22,7 @@ public class Stanza implements Serializable {
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("Stanza:\n" + "\tNome: " + nome + "\n" + "\tstato: '" + stato + "\n");
+    sb.append("Stanza:\n" + "\tNome: " + nome + "\n" + "\tstato: " + stato + "\n");
     for (int j = 0; j < K; j++) {
       if(!users[j].equals("L"))
         sb.append("\tUtente" + (j + 1) + ": " + users[j] + "\n");

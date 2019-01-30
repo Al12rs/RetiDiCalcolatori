@@ -127,11 +127,10 @@ public class ClientStream {
           socket.close();
           System.exit(2);
         }
-        System.out.println("Richiesta di eliminazione terminata");
-      } // fine eliminazione
+      } // fine comando 2
 
       System.out.print("\n^D(Unix)/^Z(Win)+invio per uscire, altrimenti immetti tipo operazione: ");
-      System.out.print("# Comando (VET=Visualizza eventi per tipo e luogo, VEP=Visualizza eventi per prezzo): ");
+      System.out.print("# Comando (VS=Visualizza stanza, RS=Ripresa stanza): ");
     } // fine
       // while
       // richiesta
