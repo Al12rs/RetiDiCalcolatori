@@ -86,6 +86,15 @@ class ServerThread extends Thread {
                   System.out.println("Rimossa S, new stato: " + listaStanze[i].stato);
                   //Stanza riavviata con successo
                   outSock.writeInt(1);
+                  
+                  //WARNING: we just changed the our data structure, since serialized objects 
+                  // are intelligently cached by ObjectOutputStream, we must 
+                  // tell it to not send the previously serialized version as it may no longer be 
+                  // up to date, If no change was made sending the cached version will improve
+                  // performance incase of large number of requests.
+                  // To ignore previous serialized object use:
+                  objectOut.reset();
+                  
                   trovata = true;
                   break;
                 } else {
