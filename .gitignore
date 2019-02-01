@@ -3,11 +3,11 @@
 *.class
 .vscode
 bin/
-/Esame24-01-18/ParteC/RPC_xFile.h
-/Esame24-01-18/ParteC/RPC_xFile_clnt.c
-/Esame24-01-18/ParteC/RPC_xFile_svc.c
-/Esame24-01-18/ParteC/RPC_xFile_xdr.c
 /Esame10-01-14/ParteC/RPC_xFile.h
 /Esame10-01-14/ParteC/RPC_xFile_clnt.c
 /Esame10-01-14/ParteC/RPC_xFile_svc.c
 /Esame10-01-14/ParteC/RPC_xFile_xdr.c
+/Esame24-01-18/ParteC/RPC_xFile.h
+/Esame24-01-18/ParteC/RPC_xFile_clnt.c
+/Esame24-01-18/ParteC/RPC_xFile_svc.c
+/Esame24-01-18/ParteC/RPC_xFile_xdr.c

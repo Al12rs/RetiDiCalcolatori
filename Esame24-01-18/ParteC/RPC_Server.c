@@ -13,20 +13,27 @@
 #include "RPC_xFile.h"
 
 //AUXILIAR FUNCTION
-int contaLineInFile(char *linea, FILE *file)
+int contaLineInFile(char *linea, int fd_file)
 {
-  char buffer[256 + 1];
-  char lineaDaConfrontare[256 + 1];
+  char buffer[LINELENGTH];
+  char character[2];
+  int nread;
+  char lineaDaConfrontare[LINELENGTH];
   int result = 0;
-  strcpy(lineaDaConfrontare, linea);
-  strcat(lineaDaConfrontare, "\n");
-  printf("Prima del ciclo fgets\n");
-  while (fgets(buffer, 256, file) != NULL)
+  lineaDaConfrontare[0] = '\0';
+  character[1] = '\0';
+  while ((nread = read(fd_file, character, sizeof(char))) > 0)
   {
-    printf("Dentro al ciclo fgets\n");
-    if (strcmp(lineaDaConfrontare, buffer) == 0)
-      result++;
-  }
+    if(character[0] == '\n'){
+      if (strcmp(lineaDaConfrontare, linea) == 0){
+        //trovata occorrenza
+        result++;
+      }
+      lineaDaConfrontare[0] = '\0';
+    }else{
+      strcat(lineaDaConfrontare, character);      
+    }
+  }  
   return result;
 } //contaLineInFile
 
@@ -37,14 +44,14 @@ int *conta_occorenze_linea_1_svc(Input1 *input1, struct svc_req *rp)
   DIR *dir;
   struct dirent *dd;
   int i;
-  FILE *file;
+  int file;
   char filePath[256];
-  strcpy(filePath, "/home/al12rs/Test/");
+  strcpy(filePath, "./");
 
   result = -1;
 
   printf("# Apertura direttorio \n");
-  if ((dir = opendir("/home/al12rs/Test")) == NULL)
+  if ((dir = opendir(".")) == NULL)
   {
     perror("# Errore apertura directory:\n");
     return (&result);
@@ -53,11 +60,11 @@ int *conta_occorenze_linea_1_svc(Input1 *input1, struct svc_req *rp)
   //ciclo sui file in dir
   while ((dd = readdir(dir)) != NULL)
   {
-    strcpy(filePath, "/home/al12rs/Test/");
+    strcpy(filePath, "./");
     printf("# Dirpath: %s\n", filePath);
 
     strcat(filePath, dd->d_name);
-    if ((file = fopen(filePath, "r")) != NULL)
+    if ((file = open(filePath, O_RDONLY)) < 0)
     {
       printf("# File non aperto d_name: %s\n", dd->d_name);
       printf("# File non aperto filepath: %s\n", filePath);
@@ -70,8 +77,8 @@ int *conta_occorenze_linea_1_svc(Input1 *input1, struct svc_req *rp)
       printf("# File aperto filepath: %s\n", filePath);
       result += contaLineInFile(input1->linea, file);
     }
-    printf("# Primadi fcloes\n");
-    fclose(file);
+    printf("# Primadi fclose\n");
+    close(file);
   } //while readDir
 
   return &result;
@@ -89,7 +96,7 @@ Output2 *lista_file_prefisso_1_svc(Input2 *input2, struct svc_req *rp)
 
   result.numFiles = -1;
   printf("# Apertura direttorio\n");
-  if ((dir = opendir(".")) == NULL)
+  if ((dir = opendir(input2->direttorio)) == NULL)
   {
     perror("# Errore apertura direttorio:\n");
     return (&result);
@@ -105,11 +112,11 @@ Output2 *lista_file_prefisso_1_svc(Input2 *input2, struct svc_req *rp)
       if (strncmp(fileDirent->d_name, input2->prefisso, prefixLength) == 0)
       {
         //add filename to list (strdup fa malloc)
-        result.fileList[result.numFiles] = strdup(fileDirent->d_name);
+        strcpy(result.fileList[result.numFiles].name, fileDirent->d_name);
         result.numFiles++;
       }
     }
   } //while readdir
-
+  printf("# Invio Risultato\n");
   return &result;
 } //rpc 2

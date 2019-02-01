@@ -4,18 +4,21 @@
 
 const PATHLENGTH = 256;
 const LINELENGTH = 256;
+const NAMELENGTH = 256;
 const N = 6;
 
 struct Input1{
-	string linea <LINELENGTH>;
+	char linea [LINELENGTH];
 };
 
 struct Input2{
-	string direttorio <PATHLENGTH>;
-	string prefisso <11>;
+	char direttorio [PATHLENGTH];
+	char prefisso [11];
 };
 
-typedef string FileString <PATHLENGTH>;
+struct FileString{
+	char name [NAMELENGTH];
+};
 
 struct Output2{
   FileString fileList [N];

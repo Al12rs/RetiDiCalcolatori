@@ -42,9 +42,9 @@ int main(int argc, char *argv[])
     exit(1);
   }
 
-  input2.direttorio=NULL;
+  /*input2.direttorio=NULL;
   input2.prefisso=NULL;
-  input1.linea=NULL;
+  input1.linea=NULL;*/
 
 
   printf("Richieste servizio fino a fine file.\n");
@@ -67,10 +67,10 @@ int main(int argc, char *argv[])
     {
       printf("# Inserisci il nome direttorio: \n");
       gets(direttorio);
-	  printf("Post gets\n");
-      free(input2.direttorio);
-	  printf("Post free\n");
-      input2.direttorio = malloc(strlen(direttorio) + 1);
+	    printf("Post gets\n");
+      //free(input2.direttorio);
+      //printf("Post free\n");
+      //input2.direttorio = malloc(strlen(direttorio) + 1);
 	  strcpy(input2.direttorio, direttorio);
 
       printf("# Inserisci il prefisso (max 10 caratteri): \n");
@@ -79,9 +79,9 @@ int main(int argc, char *argv[])
         printf("# Inserisci il prefisso (max 10 caratteri): \n");
         gets(prefisso);
       }
-      free(input2.prefisso);
-      input2.prefisso = malloc(strlen(prefisso) + 1);
-	  strcpy(input2.prefisso, prefisso);
+      //free(input2.prefisso);
+      //input2.prefisso = malloc(strlen(prefisso) + 1);
+	    strcpy(input2.prefisso, prefisso);
 
       output2 = lista_file_prefisso_1(&input2, clnt);
 
@@ -92,7 +92,7 @@ int main(int argc, char *argv[])
       else{
         printf("# Ho contato %d file con prefisso %s.\n", output2->numFiles, input2.prefisso);
         for (i = 0; i < output2->numFiles; i++){
-          printf("File %d: %s\n", i+1, output2->fileList[i]);
+          printf("File %d: %s\n", i+1, output2->fileList[i].name);
         }
       }
     } // List Files
@@ -102,8 +102,8 @@ int main(int argc, char *argv[])
     {
       printf("inserisci la linea da cercare: \n");
       gets(linea);
-      free(input1.linea);
-      input1.linea = malloc(strlen(linea) + 1);
+      //free(input1.linea);
+      //input1.linea = malloc(strlen(linea) + 1);
       strcpy(input1.linea, linea);
       ris = conta_occorenze_linea_1(&input1, clnt);
 
@@ -122,8 +122,8 @@ int main(int argc, char *argv[])
   } //while
 
   clnt_destroy(clnt);
-  free(input1.linea);
+  /*free(input1.linea);
   free(input2.direttorio);
-  free(input2.prefisso);
+  free(input2.prefisso);*/
   printf("Esco dal client\n");
 }
