@@ -50,44 +50,40 @@ public class ClientStream {
     BufferedReader stdIn = new BufferedReader(new InputStreamReader(System.in));
     String comando = null;
     String nomeFolder = null;
-    long dim_min = 0;
-    String nomeFile = null;
-    String parolaDaEliminare = null;
+    String nomeMergeFile = null;
 
     System.out.println("\n^D(Unix)/^Z(Win)+invio per uscire, altrimenti immetti il comando di una operazione.");
-    System.out.print("# Comando (E=Eliminazione, T=Trasferimento): ");
+    System.out.print("# Comando (C=conta num pari, T=Trasferimento file testo): ");
     while ((comando = stdIn.readLine()) != null) {
       if (comando.equals("T")) {
 
-        System.out.print("Inserire il nome del direttorio: ");
+        System.out.print("Inserire il path del direttorio: ");
         nomeFolder = stdIn.readLine();
-        System.out.print("Inserire la dimensione di soglia: ");
-        dim_min = Long.parseLong(stdIn.readLine());
+        System.out.print("Inserire il nome del file su cui salvare il merge: ");
+        nomeMergeFile = stdIn.readLine();
 
         // INVIO TIPO RICHIESTA AL SERVER
         outSock.writeUTF(comando);
 
         // INVIO DATI RICHIESTA
         outSock.writeUTF(nomeFolder);
-        outSock.writeLong(dim_min);
 
         try {
-          String nomeFileRicevuto;
-          long numeroByte;
-          FileOutputStream outFileCorr;
-
-          while ((nomeFileRicevuto = inSock.readUTF()) != null) {
-            if (nomeFileRicevuto.equals("#")) {
-              break;
+          int numeroRighe = inSock.readInt();
+          if (numeroRighe > 0) {
+            BufferedWriter targetFile = new BufferedWriter(new FileWriter(nomeMergeFile));
+            String riga = null;
+            for (int i = 0; i < numeroRighe; i++) {
+              riga = inSock.readUTF();
+              targetFile.write(riga);
+              //targetFile.newLine();
             }
-
-            numeroByte = inSock.readLong();
-            System.out.println("Scrivo il file " + nomeFileRicevuto + " di " + numeroByte + " byte");
-            outFileCorr = new FileOutputStream(nomeFileRicevuto);
-            FileUtility.trasferisci_N_byte_file_binario(inSock, new DataOutputStream(outFileCorr), numeroByte);
-            outFileCorr.close();
-
-          } // while
+            targetFile.close();
+          } else if(numeroRighe == 0){
+            System.out.println("Non ci sono file o i file sono vuoti");
+          } else {
+            System.out.println("Errore lato server");
+          }
         } catch (SocketTimeoutException ste) {
           System.out.println("Timeout scattato: ");
           ste.printStackTrace();
@@ -102,33 +98,29 @@ public class ClientStream {
         }
         System.out.println("Trasferimento concluso");        
         //FINE CICLO DI TRASFERIMENTO
-      } else if(comando.equals("E")){
-
-        System.out.print("Inserire il nome del file: ");
-        nomeFile = stdIn.readLine();
-        System.out.print("Inserire la parola da eliminare: ");
-        parolaDaEliminare = stdIn.readLine();
+      } else if(comando.equals("C")){
 
         // INVIO TIPO RICHIESTA AL SERVER
         outSock.writeUTF(comando);
 
         // INVIO DATI RICHIESTA
-        outSock.writeUTF(nomeFile);
-        outSock.writeUTF(parolaDaEliminare);
+        //nulla in queesto caso
         
         //RICEZIONE ESITO DELLA RICHIESTA
         try {
-          int numOccorrenzeEliminate = inSock.readInt();
-          System.out.println("Numero di occorrenze di "+parolaDaEliminare+" eliminate dal file "+nomeFile+": "+numOccorrenzeEliminate);
+          int numOccorrenzeTrovate = inSock.readInt();
+          System.out.println("Numero di occorrenze di numeri pari trovate nel direttorio remoto: " + numOccorrenzeTrovate);
         } catch (SocketTimeoutException ste) {
           System.out.println("Timeout scattato: ");
           ste.printStackTrace();
+          socket.shutdownOutput();
           socket.close();
           System.exit(1);
         } catch (Exception e) {
           System.out.println("Problemi, i seguenti : ");
           e.printStackTrace();
           System.out.println("Chiudo ed esco...");
+          socket.shutdownOutput();
           socket.close();
           System.exit(2);
         }
@@ -140,6 +132,7 @@ public class ClientStream {
     }//fine while richiesta di comandi
 
     System.out.println("Chiudo e termino...");
+    socket.shutdownOutput();    
     socket.close();
 
   }

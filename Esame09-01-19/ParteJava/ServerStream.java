@@ -51,62 +51,115 @@ class ServerThread extends Thread {
             String folderName = null;
             folderName = inSock.readUTF();
 
-            long minDim = inSock.readLong();
-
             File currentDir = new File(folderName);
             if (currentDir.exists() && currentDir.isDirectory()) {
               File[] files = currentDir.listFiles();
+              int numeroTotaleRighe = 0;
+              BufferedWriter mergeFileWriter = null;
+              try {
+                mergeFileWriter = new BufferedWriter(new FileWriter("merge.txt"));
+              } catch (Exception e) {
+                System.out.println("Impossibile creare file merge");
+                outSock.writeInt(-1);
+                continue;                
+              }                            
 
               // iterate on files in currentDir
               for (int i = 0; i < files.length; i++) {
                 File currentFile = files[i];
                 System.out.println("File con nome: " + currentFile.getName());
-                if (currentFile.isFile() && minDim <= currentFile.length()) {
-
-                  // Send fileName
-                  outSock.writeUTF(currentFile.getName());
-
-                  // Send fileSize
-                  outSock.writeLong(currentFile.length());
-
-                  // Send file
-                  FileUtility.trasferisci_N_byte_file_binario(
-                      new DataInputStream(new FileInputStream(currentFile.getAbsolutePath())), outSock,
-                      currentFile.length());
-
+                if (currentFile.isFile()) {
+                  try {
+                    BufferedReader fileReader = new BufferedReader(new FileReader(currentFile));
+                    String currentLine = null;
+                    while ((currentLine = fileReader.readLine()) != null) {
+                      mergeFileWriter.write(currentLine);
+                      mergeFileWriter.newLine();
+                      numeroTotaleRighe++;
+                    }
+                    fileReader.close();
+                  } catch (Exception e) {
+                    e.printStackTrace();
+                    continue;
+                  }
                 } else
                   System.out.println("File saltato");
               } // fine for
 
+              if (numeroTotaleRighe > 0) {
+                outSock.writeInt(numeroTotaleRighe);
+                try {
+                  mergeFileWriter.close();
+                  BufferedReader mergeFileReader = new BufferedReader(new FileReader("merge.txt"));
+                  String currentLine = null;
+                  while ((currentLine = mergeFileReader.readLine()) != null) {
+                    outSock.writeUTF(currentLine + "\n");
+                  }
+                  mergeFileReader.close();
+                  File mergeFile = new File("merge.txt");
+                  mergeFile.delete();                                                      
+                } catch (Exception e) {
+                  e.printStackTrace();
+                  System.out.println("Problemi nell'inviare il merge");
+                  clientSocket.shutdownOutput();
+                  clientSocket.close();
+                  System.exit(1);
+                }                                
+              } else {
+                outSock.writeInt(numeroTotaleRighe);
+              }
+            } else {
+              outSock.writeInt(-1);
             } // if currentDir.exists
 
-            // finiti i file da trasferire
-            outSock.writeUTF("#");
+            System.out.println("Fine trasferimento");
 
-          } // transfer files request
-          // Eliminate Word Request
-          else if (requestType.equals("E")) {
-            System.out.println("Richiesta Elimina");
-            String wordToDelete;
-            String targetFileName;
-            int removedCount = 0;
-            char[] separators = { ' ', '\n' };
-
-            targetFileName = inSock.readUTF();
-
-            wordToDelete = inSock.readUTF();
-
-            System.out.println("Elimina " + wordToDelete +" da "+ targetFileName);
+          } // First Request
+          // Second request 
+          else if (requestType.equals("C")) {
+            System.out.println("# Richiesta Conta");
+            int evenCount = 0;
+            char[] c = new char[1];
+            BufferedReader reader = null;
+            StringBuilder buffer = new StringBuilder();
+            int foundNumber;
 
             try {
-              removedCount = FileUtility.removeWordFromFile(targetFileName, wordToDelete, separators);
+              File currenctDir = new File("/home/al12rs/Test/");
+              for (File currentFile : currenctDir.listFiles()) {
+                if(currentFile.exists() && !currentFile.isDirectory()){
+                  reader = new BufferedReader(new FileReader(currentFile));
+                  while (reader.read(c) > 0) {
+                    if (c[0] >= '0' && c[0] <= '9') {
+                      buffer.append(c);
+                    } else {
+                      if (!buffer.toString().isEmpty()) {
+                        try {
+                          foundNumber = Integer.parseInt(buffer.toString());
+                          if ((foundNumber % 2) == 0) {
+                            evenCount++;
+                          }
+                        } catch (NumberFormatException e) {
+                          e.printStackTrace();
+                          // simply skip this number
+                        }
+                       }
+                      
+                      buffer.setLength(0);
+                    }
+                  }
+                  reader.close();
+                }
+              }
             } catch (IOException e) {
               System.out.println("Errori durante la lettura/scrittura files.");
-              removedCount = -1;
+              evenCount = -1;
+              e.printStackTrace();              
             }
-            outSock.writeInt(removedCount);
+            //Mando risposta
+            outSock.writeInt(evenCount);
 
-          } // eliminate word request
+          } // Second Request
         }//while (ciclo richieste)
       } catch (EOFException eof) {
         System.out.println("Raggiunta la fine delle ricezioni, chiudo...");
