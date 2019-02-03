@@ -11,3 +11,7 @@ bin/
 /Esame24-01-18/ParteC/RPC_xFile_clnt.c
 /Esame24-01-18/ParteC/RPC_xFile_svc.c
 /Esame24-01-18/ParteC/RPC_xFile_xdr.c
+/Esame09-01-19/ParteC/RPC_xFile.h
+/Esame09-01-19/ParteC/RPC_xFile_clnt.c
+/Esame09-01-19/ParteC/RPC_xFile_svc.c
+/Esame09-01-19/ParteC/RPC_xFile_xdr.c
