@@ -13,7 +13,7 @@ public interface RMI_interfaceFile extends Remote {
   /**
   * @param directoryPath = path of the directory to examine.
   * @throws RemoteException = IOException or no file found.
-  * @return list of filesNames with two or more consecutive vocals in the name.
+  * @return list of filesNames with two or more consecutive vowels in the name.
   **/
 	public String[] lista_file(String directoryPath) throws RemoteException;
 

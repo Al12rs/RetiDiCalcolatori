@@ -58,8 +58,13 @@ public class RMI_Client {
             int i=0;
             System.out.println("File trovati:");
             for (String s : lista_file) {
-              i++;
-              System.out.println("File "+i+": "+s);												
+							if (s == null) {
+								break;
+							}
+							i++;
+							
+							System.out.println("File " + i + ": " + s);
+																		
             }
             System.out.println("Trovati:" + i + " file");            
 					} catch (RemoteException re) {

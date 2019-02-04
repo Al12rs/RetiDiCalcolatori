@@ -12,7 +12,9 @@ import java.util.*;//ArrayList
 
 public class RMI_Server extends UnicastRemoteObject implements RMI_interfaceFile {
 
-	public static final long serialVersionUID = 1;
+   public static final long serialVersionUID = 1;
+
+  private static final int MAX_FILES = 30;      
 
 	// Costruttore
   public RMI_Server() throws RemoteException {
@@ -20,6 +22,7 @@ public class RMI_Server extends UnicastRemoteObject implements RMI_interfaceFile
   }
 
   //AUXILIAR FUNCTIONS
+  /*
   private ArrayList<String> listMatchingFilesInDirRecursive(File currentDir, String pattern) {
     ArrayList<String> result = new ArrayList<String>();
     for (File f : currentDir.listFiles()) {
@@ -33,22 +36,50 @@ public class RMI_Server extends UnicastRemoteObject implements RMI_interfaceFile
       }
     }    
     return result;
-  }
+  }*/
+
+  private int listMatchingFilesInDirRecursive(File currentDir, String pattern, String[] vector, int index) {
+    for (File f : currentDir.listFiles()) {
+      if (f.isDirectory()) {
+        // recursive call
+        index = listMatchingFilesInDirRecursive(f, pattern, vector, index);
+      
+      } else {
+        if (index >= MAX_FILES) {
+          return index;
+        } else if (f.getName().matches(pattern)) {
+          vector[index] = new String(f.getName());
+          index++;
+        }
+      }
+    }
+    return index;    
+  }      
    
 
   //FIRST RMI METHOD
   public String[] lista_file(String directoryPath) throws RemoteException {
-    ArrayList<String> result = new ArrayList<String>();
+    String[] vector = new String[MAX_FILES];
     File originalDirectory = new File(directoryPath);
     //'.' is: "any character", 'X*' is: "X, 0 or more times"
     String pattern = ".*[AEIOUaeiou][AEIOUaeiou].*";
-
+    int index = 0;
     if (originalDirectory.isDirectory()) {
+      index = listMatchingFilesInDirRecursive(originalDirectory, pattern, vector, index);
+      System.out.println("Trovati " + index + "files");
+    } else {
+      throw new RemoteException("# Parameter directoryPath " + directoryPath + " is not a directory.");
+    }
+    if(index>0)
+      return vector;
+    else
+      return new String[0];
+    /*if (originalDirectory.isDirectory()) {
       result = listMatchingFilesInDirRecursive(originalDirectory, pattern);
     } else {
       throw new RemoteException("# Parameter directoryPath " + directoryPath + " is not a directory.");
     }
-    return result.toArray(new String[0]);
+    return result.toArray(new String[0]);*/
   }
 
   //SECOND RMI METHOD
