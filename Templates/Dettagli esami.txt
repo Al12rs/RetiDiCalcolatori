@@ -72,7 +72,7 @@ DETTAGLI_ESAMI
     CSelect
     {
       Visualizza evento pere tipo e luogo
-      Visualizza eventi per prezzo
+      Visualizza eventi per prezzo (controllo sul numero)
     }
     RMI
     {
