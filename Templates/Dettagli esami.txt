@@ -1,0 +1,163 @@
+TIPOLOGIE
+{
+  FILE
+  {
+    RMI-SOCKETC
+    {
+      Esame14-06-18
+      Esame24-06-08
+    }
+    RPC-JAVASTREAM
+    {
+      Esame09-01-19
+      Esame21-12-05
+      Esame24-01-18
+    }
+  }
+  STRUTTURE DATI
+  {
+    RMI-SOCKETC
+    {
+      Esame10-01-14-V2
+      Esercitazione10
+    }
+    RPC-JAVASTREAM
+    {
+      Esame10-01-14
+    }
+  }
+  MISTA
+  {
+    RMI-SOCKETC
+    {
+      Esame23-01-19
+    }
+  }
+}
+
+
+
+
+
+DETTAGLI_ESAMI
+{
+  Esame09-01-19
+  {
+    RPC
+    {
+      Elimina numeri da NomeFile
+      Lista i primi N files del direttorio con il nome che inizia con numero dispari
+    }
+    Java Stream
+    {
+      Conta numeri pari dentro files di un direttorio
+      Trasferisci merge di txt files di un direttorio
+    }
+  }
+  Esame10-01-14
+  {
+    RPC
+    {
+      Inserisci evento (aggiunta elemento a tabella)
+      Acquista biglietti (modifica valore in tabella)
+    }
+    Java Stream
+    {
+      Visualizza eventi per tipo e luogo (filtro struttura, restituisco lista)
+      Visualizza eventi per prezzo (filtro struttura, restituisco lista)                   
+    }    
+  }
+  Esame10-01-14-V2
+  {
+    CSelect
+    {
+      Visualizza evento pere tipo e luogo
+      Visualizza eventi per prezzo
+    }
+    RMI
+    {
+      Inserisci evento 
+      Acquista bigietto
+    }
+  }
+  Esame14-06-18
+  {
+    CSelect
+    {
+      Elimina occorrenze consonanti da FileName
+      Invia tutti i file del direttorio passato che hanno almeno un una consonate e una vocale nel nome
+    }
+    Java RMI
+    {
+      Lista files in passed folder con duo vocali adiacenti nel nome (scansione direttorio ricorsiva utilizzando array)
+      Numerazione righe file di testo passato.     
+    }
+  }
+  Esame21-12-05
+  {
+    RPC
+    {
+      Elimina utente da tutte le stanze (modifica valori della struttura dati)
+      Elimina stanza dalla struttura dati
+    }
+    Java Stream
+    {
+      Visualizza stanza dato un nome (ritorna una stanza)
+      Riprendi attivita stanza (modifica struttura dati)        
+    }
+  }
+  Esame23-01-19
+  {
+    CSelect
+    {
+      Aggiornamento patente data targa (Modifica struttura dati)
+      Trasferisci immagini associate a una targa (trasferimento file da un direttorio)
+    }
+    Java RMI
+    {
+      Elimina Prenotazione data targa (elimina elemento dalla struttura dati)
+      Visualizza prenotazioni dato un tipo (ritorna vettore di prenotazioni)
+    }
+  }
+  Esame24-01-18
+  {
+RPC
+    {
+      Conta occorrenze lina nei file del direttorio corrente
+      Lista dei primi N file con dato prefisso nel direttorio passato
+    }
+    Java Stream
+    {
+      Trasferisci tutti i file in NomeDirettorio con dimensione maggiore ad una specificata (usa File Utility)
+      Elimina Parola da NomeFile e restituisce conteggio eliminato. (usa FileUtility e StringBuilder)
+    }
+  }
+  Esame24-06-08
+  {
+    CSelect
+    {
+      Controlla presenza di KeyWord in FileName (ritorna intero)
+      Invia tutte le linee di FileName contenenti KeyWord
+    }
+    Java RMI
+    {
+      Lista dei file in NomeDirettorio contenenti Keyword (implementazione usa una lista, cambiare ad array a dimensione prefissata (eg: 30));
+      Conta numero linee contenenti keyWord in Filename.
+    }
+  }
+  Esercitazione10
+  {
+    CSelect
+    {
+      Restituisce punteggio cantante in base al nome
+      Visualizza cantanti con voto superiore a soglia passata (inviati i singoli cantanti con i requisiti richiesti)
+    }
+    Java RMI
+    {
+      Visualizza cantante (passo nome ritorno struttura cantante)
+      Visualizza podio (Invia vettore di top tre cantanti con punteggio piu alto)      
+    }    
+  }
+}
+
+  

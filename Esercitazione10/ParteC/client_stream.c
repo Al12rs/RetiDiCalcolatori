@@ -31,14 +31,14 @@ int main(int argc, char *argv[])
   int m;
   TCPAnswer tcpreply;
 
-  /* CONTROLLO ARGOMENTI ---------------------------------- */
+  // CONTROLLO ARGOMENTI
   if (argc != 3)
   {
     printf("Error:%s serverAddress serverPort\n", argv[0]);
     exit(1);
   }
 
-  /* INIZIALIZZAZIONE INDIRIZZO SERVER -------------------------- */
+  // INIZIALIZZAZIONE INDIRIZZO SERVER 
   memset((char *)&servaddr, 0, sizeof(struct sockaddr_in));
   servaddr.sin_family = AF_INET;
   host = gethostbyname(argv[1]);
@@ -69,7 +69,7 @@ int main(int argc, char *argv[])
   servaddr.sin_addr.s_addr = ((struct in_addr *)(host->h_addr_list[0]))->s_addr;
   servaddr.sin_port = htons(port);
 
-  /* CREAZIONE SOCKET ------------------------------------ */
+  // CREAZIONE SOCKET
   sd = socket(AF_INET, SOCK_STREAM, 0);
   if (sd < 0)
   {
@@ -78,7 +78,7 @@ int main(int argc, char *argv[])
   }
   printf("Client: creata la socket sd=%d\n", sd);
 
-  /* Operazione di BIND implicita nella connect */
+  // Operazione di BIND implicita nella connect
   if (connect(sd, (struct sockaddr *)&servaddr, sizeof(struct sockaddr)) < 0)
   {
     perror("connect");
@@ -86,8 +86,7 @@ int main(int argc, char *argv[])
   }
   printf("Client: connect ok\n");
 
-  /* CORPO DEL CLIENT:
-	 ciclo di accettazione di richieste da utente ------- */
+  //CORPO DEL CLIENT:ciclo di accettazione di richieste da utente
   printf("# Inserire valore di soglia, EOF per terminare: ");
   while (scanf("%d", &m) == 1)
   {
